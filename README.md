@@ -18,7 +18,19 @@ It never files silently. The tool proposes; a human approves, edits or rejects.
 
 ## Quick start
 
-No dependencies needed to run against the synthetic samples:
+Click around the demo — no dependencies, no setup:
+
+```bash
+python3 -m advicefiler.ui --demo        # opens http://127.0.0.1:8765/
+```
+
+Ten synthetic documents, including an illegible scan and an authority to proceed
+with no advice record behind it, so the flags and the review queue have something
+to show. Local only: it binds to `127.0.0.1`, reads files from this machine, and
+uploads nothing. See `docs/DEPLOYMENT.md` for why this is a desktop tool rather
+than a hosted one.
+
+The same pipeline on the command line:
 
 ```bash
 python3 harness.py                      # ten sample documents, full pipeline
@@ -269,6 +281,7 @@ advicefiler/
   profiles.py          firm filing schemes (folder layout, vocabulary, limits)
   clients.py           matching a document to the firm's existing client
   security.py          redaction, file hygiene, audit digests
+  ui.py                local review UI (build step 5, first cut)
   storage.py           the folder plan (data only — nothing is written)
   integrate.py         manifest/CSV/script export, approvals, destinations
   evaluate.py          ground truth, failure log, confidence calibration
@@ -276,6 +289,7 @@ advicefiler/
 profiles/              four filing schemes; copy one to match a firm
 docs/
   ROADMAP.md           the build plan: what gates each step, where the risk is
+  DEPLOYMENT.md        desktop vs hosted, and why it matters here
   ARCHITECTURE.md      how the pieces fit and why
   INTEGRATION.md       connecting to a firm's existing filing system
   SECURITY.md          what is protected, how, and what is deliberately not done
@@ -290,7 +304,7 @@ tests/                 72 regression tests, one per bug v0 actually made
 2. ✅ Test harness — classify + group + folder tree + flags + failure log
 3. 🔨 **Real documents through the harness; fix failures; calibrate confidence**
 4. ⬜ Swap the keyword matcher for the LLM classifier (same hints)
-5. ⬜ Approve / edit / reject UI
+5. 🔨 Approve / edit / reject UI — local web UI works; desktop packaging next
 6. ⬜ Move storage to Australian-region cloud (only when a pilot needs it)
 7. ⬜ AI summary per advice event (only when grouping is trusted)
 
