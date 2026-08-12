@@ -42,7 +42,7 @@ from typing import List, Optional
 from advicefiler import evaluate, extract, integrate, pipeline, report
 from advicefiler.classify import KeywordClassifier
 from advicefiler.kb import KnowledgeBase, KnowledgeBaseError
-from advicefiler.clients import ClientRegister
+from advicefiler.clients import ClientEntry, ClientRegister
 from advicefiler.profiles import FilingProfile, ProfileError, available
 from advicefiler.security import harden, redact_manifest
 
@@ -112,10 +112,29 @@ def build_parser() -> argparse.ArgumentParser:
                         help="required with --backup-root, e.g. ap-southeast-2")
     filing.add_argument("--allow-non-au-backup", action="store_true",
                         help="acknowledge backing up outside Australia")
+
+    reorg = p.add_argument_group("reorganising an existing filed tree")
+    reorg.add_argument("--reorganise", metavar="DIR",
+                       help="read an already-filed client tree and propose a "
+                            "re-filing. Implies recursive reading, uses the tree "
+                            "itself as the client register, and moves rather than "
+                            "copies. Documents already in the right place are not "
+                            "touched; documents that cannot be placed confidently "
+                            "are left exactly where they are.")
+    reorg.add_argument("--undo", metavar="PATH",
+                       help="a rollback file from a previous reorganisation")
+    reorg.add_argument("--accept-new-clients", metavar="PATH",
+                       help="an --emit-new-clients file with confirm set to true; "
+                            "merges those clients into the register so their "
+                            "documents can file")
+    reorg.add_argument("--register-out", metavar="PATH",
+                       help="where to write the grown register (default: in place)")
     return p
 
 
 def load_documents(args):
+    if args.reorganise:
+        return extract.extract_directory(args.reorganise, recursive=True)
     if args.input:
         return extract.extract_directory(args.input)
     with open(args.samples, "r") as fh:
@@ -133,6 +152,115 @@ def resolve_ground_truth(args):
         print("ground truth not found: %s" % path, file=sys.stderr)
         return None
     return evaluate.GroundTruth.load(path)
+
+
+def do_reorganise(args, result) -> int:
+    """Report what would change in an existing filed tree, and optionally do it."""
+    root = args.reorganise
+    reorg = integrate.plan_reorganisation(result, root)
+
+    print("=" * 78)
+    print("REORGANISATION — %s" % root)
+    print("=" * 78)
+    print(reorg.summary())
+    print()
+
+    cross = reorg.cross_client_moves()
+    if cross:
+        print("MOVES THAT CHANGE CLIENT (%d) — read these first" % len(cross))
+        for item in cross:
+            print("  %s" % item["current"])
+            print("    -> %s" % item["proposed"])
+            print("       %s (%s, conf %.2f)"
+                  % (item["note"], item["type"], item["confidence"]))
+        print()
+
+    other = [i for i in reorg.moves if i not in cross]
+    if other:
+        print("MOVES WITHIN THE SAME CLIENT (%d)" % len(other))
+        for item in other[:40]:
+            print("  %s\n    -> %s" % (item["current"], item["proposed"]))
+        if len(other) > 40:
+            print("  ... and %d more" % (len(other) - 40))
+        print()
+
+    left = [i for i in reorg.items if i["action"] == integrate.LEAVE]
+    if left:
+        print("LEFT WHERE THEY ARE (%d) — not confidently placed, not disturbed"
+              % len(left))
+        for item in left[:20]:
+            print("  %-50s %s" % (item["current"][:50], item["note"][:60]))
+        print()
+
+    if not args.approved:
+        print("Nothing has moved. To act on this:")
+        print("  1. re-run with --emit-approvals out/approvals.json")
+        print("  2. edit it — decision \"approve\" per document, or correct the "
+              "destination")
+        print("  3. re-run with --approved out/approvals.json          (dry run)")
+        print("  4. re-run with --approved out/approvals.json --commit (moves)")
+        print()
+        return 0
+
+    approvals = integrate.load_approvals(args.approved)
+    if not reorg.approved_move_ids(approvals):
+        print("no approved moves in %s" % args.approved)
+        return 0
+
+    rollback = None
+    if args.commit:
+        # Written BEFORE anything moves, so an interrupted run is still undoable.
+        rollback = integrate.write_rollback(
+            reorg.rollback_entries(approvals), root,
+            evaluate.run_id(result.started))
+        print("rollback file: %s" % rollback)
+
+    destination = integrate.LocalFolderDestination(root, "move")
+    applied = reorg.apply(result.plan, destination, approvals,
+                          dry_run=not args.commit)
+    print()
+    print(applied.summary())
+    if not args.commit:
+        print("dry run — nothing moved. Add --commit to reorganise.")
+    else:
+        print("undo with:  python3 harness.py --undo %s --commit" % rollback)
+    return 0
+
+
+def do_accept_new_clients(args, kb) -> int:
+    """Confirm proposed clients, so their documents can file on the next run."""
+    with open(args.accept_new_clients, "r") as fh:
+        payload = json.load(fh)
+    rows = payload.get("clients", [])
+    confirmed = [r for r in rows if r.get("confirm", True)]
+    if not confirmed:
+        print("no clients marked confirm: true in %s" % args.accept_new_clients)
+        return 0
+    if not args.clients:
+        print("--accept-new-clients needs --clients (the register to grow)",
+              file=sys.stderr)
+        return 2
+
+    register = ClientRegister.load(args.clients, kb)
+    existing = set(e.folder_name for e in register.entries)
+    added = 0
+    for row in confirmed:
+        row.pop("confirm", None)
+        if row.get("folder_name") in existing:
+            continue
+        register.add(ClientEntry(**row))
+        added += 1
+    out = args.register_out or (args.clients if not os.path.isdir(args.clients)
+                                else None)
+    if out is None:
+        print("--clients points at a directory; pass --register-out to say where "
+              "the grown register should be written", file=sys.stderr)
+        return 2
+    register.save(out)
+    print("register: %d client(s) added, %d total, written to %s"
+          % (added, len(register), out))
+    print("re-run without --accept-new-clients and their documents will file.")
+    return 0
 
 
 def _redaction_vocabulary(kb) -> List[str]:
@@ -153,8 +281,8 @@ def _redaction_vocabulary(kb) -> List[str]:
     return [w for w in words if len(w) > 1]
 
 
-def do_integration(args, result) -> int:
-    """Exports, then preflight, then filing. Returns an exit code."""
+def do_exports(args, result) -> None:
+    """Manifest, CSV, script, approvals, proposed new clients."""
     if args.export_manifest:
         if args.redact:
             import json as _json
@@ -180,12 +308,15 @@ def do_integration(args, result) -> int:
         import json as _json
         integrate._ensure_parent(args.emit_new_clients)
         with open(args.emit_new_clients, "w") as fh:
-            _json.dump({"clients": [c.to_dict() for c in result.new_clients]},
+            _json.dump({"clients": [dict(c.to_dict(), confirm=False)
+                                    for c in result.new_clients]},
                        fh, indent=2, ensure_ascii=False)
             fh.write("\n")
         harden(args.emit_new_clients)
-        print("new clients: %d written to %s — confirm, then append to your "
-              "register" % (len(result.new_clients), args.emit_new_clients))
+        print("new clients: %d written to %s" % (len(result.new_clients),
+                                                  args.emit_new_clients))
+        print("             set \"confirm\": true on the real ones, then re-run "
+              "with --accept-new-clients %s" % args.emit_new_clients)
 
     if args.emit_approvals:
         path = integrate.write_approvals(result, args.emit_approvals)
@@ -193,6 +324,8 @@ def do_integration(args, result) -> int:
         print("           edit 'decision' to \"approve\", then re-run with "
               "--approved %s --dest-root DIR" % path)
 
+def do_integration(args, result) -> int:
+    """Preflight, then filing. Returns an exit code."""
     if not args.dest_root:
         return 0
 
@@ -248,6 +381,19 @@ def do_integration(args, result) -> int:
 def main(argv: Optional[List[str]] = None) -> int:
     args = build_parser().parse_args(argv)
 
+    if args.undo:
+        try:
+            undone = integrate.undo(args.undo, dry_run=not args.commit)
+        except (IOError, integrate.IntegrationError) as exc:
+            print("undo failed: %s" % exc, file=sys.stderr)
+            return 2
+        print(undone.summary())
+        for item in undone.items:
+            print("  %-9s %s" % (item.action, item.destination or item.source))
+        if not args.commit:
+            print("\ndry run — nothing moved back. Add --commit to undo.")
+        return 0
+
     if args.list_profiles:
         for name in available():
             profile = FilingProfile.load(name)
@@ -271,6 +417,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     except extract.ExtractionError as exc:
         print("extraction error: %s" % exc, file=sys.stderr)
         return 2
+
+    if args.accept_new_clients:
+        try:
+            return do_accept_new_clients(args, kb)
+        except (IOError, ValueError) as exc:
+            print("could not accept new clients: %s" % exc, file=sys.stderr)
+            return 2
+
+    # Reorganising reads the tree it is about to rewrite, and uses that tree's
+    # own client folders as the register — the firm's existing structure is the
+    # thing being conformed to, not replaced.
+    if args.reorganise and not args.clients:
+        args.clients = args.reorganise
 
     register = None
     if args.clients:
@@ -324,6 +483,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print()
 
     try:
+        do_exports(args, result)
+        if args.reorganise:
+            return do_reorganise(args, result)
         return do_integration(args, result)
     except integrate.IntegrationError as exc:
         print("integration error: %s" % exc, file=sys.stderr)

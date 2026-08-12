@@ -315,8 +315,15 @@ def extract_file(path: str) -> ExtractedDocument:
     )
 
 
-def extract_directory(directory: str) -> Tuple[List[ExtractedDocument], List[Dict[str, str]]]:
+SKIP_DIRECTORIES = ("_advicefiler",)
+
+
+def extract_directory(directory: str, recursive: bool = False
+                      ) -> Tuple[List[ExtractedDocument], List[Dict[str, str]]]:
     """Extract every supported document in a directory (one intake batch).
+
+    ``recursive`` walks the whole tree, which is what reading an already-filed
+    client folder needs — a filed tree is nested by definition.
 
     Returns the successes and a list of failures. A file that cannot be read is
     reported, never skipped silently — an unreadable document in a compliance
@@ -328,21 +335,37 @@ def extract_directory(directory: str) -> Tuple[List[ExtractedDocument], List[Dic
     if not os.path.isdir(directory):
         raise ExtractionError("not a directory: %s" % directory)
 
-    for entry in sorted(os.listdir(directory)):
-        if entry.startswith("."):
-            continue
-        path = os.path.join(directory, entry)
-        if not os.path.isfile(path):
-            continue
-        if os.path.splitext(entry)[1].lower() not in SUPPORTED_SUFFIXES:
-            failures.append({"file": entry, "error": "unsupported file type"})
+    for path, label in _candidates(directory, recursive):
+        if os.path.splitext(path)[1].lower() not in SUPPORTED_SUFFIXES:
+            failures.append({"file": label, "error": "unsupported file type"})
             continue
         try:
-            documents.append(extract_file(path))
+            document = extract_file(path)
+            # Keep the tree position: reorganising needs to know where a
+            # document currently lives, not just what it is called.
+            document.name = label
+            documents.append(document)
         except ExtractionError as exc:
-            failures.append({"file": entry, "error": str(exc)})
+            failures.append({"file": label, "error": str(exc)})
 
     return documents, failures
+
+
+def _candidates(directory, recursive):
+    if not recursive:
+        for entry in sorted(os.listdir(directory)):
+            path = os.path.join(directory, entry)
+            if not entry.startswith(".") and os.path.isfile(path):
+                yield path, entry
+        return
+    for current, directories, files in os.walk(directory):
+        directories[:] = sorted(d for d in directories
+                                if not d.startswith(".") and d not in SKIP_DIRECTORIES)
+        for entry in sorted(files):
+            if entry.startswith("."):
+                continue
+            path = os.path.join(current, entry)
+            yield path, os.path.relpath(path, directory)
 
 
 def from_sample_records(records: List[Dict[str, Any]]) -> List[ExtractedDocument]:

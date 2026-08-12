@@ -24,7 +24,7 @@ No dependencies needed to run against the synthetic samples:
 python3 harness.py                      # ten sample documents, full pipeline
 python3 harness.py --display new        # with the teaching layer switched on
 python3 harness.py --calibrate          # sweep the confidence threshold
-python3 -m unittest discover -s tests   # 64 regression tests
+python3 -m unittest discover -s tests   # 72 regression tests
 ```
 
 To read real PDFs and Word files:
@@ -185,6 +185,27 @@ plainly — and whatever it extracts still comes through this matcher.
 Without `--clients`, matching is off and the name read from the document is used
 as-is, so a first run against an unknown firm still works.
 
+## Reorganising what is already filed
+
+Most firms' real problem is the decade already filed, by six people, to four
+conventions.
+
+```bash
+python3 harness.py --reorganise "/Volumes/Advice/Clients"          # what would change
+python3 harness.py --reorganise "/Volumes/Advice/Clients" \
+    --approved out/reorg.json --commit                             # move it
+python3 harness.py --undo ".../_advicefiler/rollback-*.json" --commit
+```
+
+It reads the tree recursively, uses that tree's own client folders as the
+register, and moves rather than copies. Three rules make it safe to point at a
+live client file: a document already in the right place is not touched; a
+document that cannot be confidently placed is **left exactly where it is**,
+never swept into `_Needs review`; and every move is written to a rollback file
+before it happens. Moves that change which client a document sits under are
+listed first — if the classifier is wrong, the document leaves the file it
+belongs to *and* contaminates one it does not.
+
 ## Security
 
 No network calls at all — `advicefiler/` imports nothing that opens a socket, and
@@ -260,7 +281,7 @@ docs/
   SECURITY.md          what is protected, how, and what is deliberately not done
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
 legacy/harness_v0.py   the keyword prototype, kept for before/after comparison
-tests/                 64 regression tests, one per bug v0 actually made
+tests/                 72 regression tests, one per bug v0 actually made
 ```
 
 ## Build sequence

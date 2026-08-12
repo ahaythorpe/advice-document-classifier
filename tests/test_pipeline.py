@@ -618,3 +618,153 @@ class TestSecurity(unittest.TestCase):
         rows = [json.loads(line) for line in open(audit)]
         self.assertEqual(len(rows), 1)
         self.assertEqual(len(rows[0]["sha256"]), 64)
+
+
+class TestReorganisation(unittest.TestCase):
+    """Re-filing a back-catalogue: the most dangerous thing this tool does."""
+
+    def _legacy_tree(self):
+        import tempfile
+        root = tempfile.mkdtemp()
+        files = {
+            "Tran, Mei/Old stuff/soa 2024 FINAL v3.txt":
+                "STATEMENT OF ADVICE\nPrepared for: Mei Tran\n"
+                "Scope of advice: investment portfolio construction.\n"
+                "Basis for advice and reasoning. Our recommendation follows.\n"
+                "Remuneration and conflicts disclosed. Date of advice: 09/05/2024\n",
+            "Nguyen, Bao/misc/factfind-tran.txt":
+                "FACT FIND - CLIENT DATA FORM\nClient: Mei Tran\n"
+                "Assets and liabilities, income and expenses, goals and objectives.\n"
+                "Signed by client confirming accuracy. Date completed: 22/04/2024\n",
+            "Tran, Mei/unreadable fax.txt": "x . . x  q  |||  p 2 f  ~~ \n",
+        }
+        for relative, text in files.items():
+            path = os.path.join(root, relative)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w") as fh:
+                fh.write(text)
+        return root
+
+    def _run(self, root):
+        kb = KnowledgeBase.load()
+        docs, failures = extract.extract_directory(root, recursive=True)
+        register = clients.ClientRegister.from_directory(root, kb)
+        result = pipeline.run(kb, docs, extraction_failures=failures,
+                              register=register)
+        return result, integrate.plan_reorganisation(result, root)
+
+    def test_recursive_reading_keeps_the_tree_position(self):
+        root = self._legacy_tree()
+        docs, _ = extract.extract_directory(root, recursive=True)
+        self.assertEqual(len(docs), 3)
+        self.assertTrue(any(os.sep in d.name for d in docs))
+
+    def test_a_document_under_the_wrong_client_is_a_cross_client_move(self):
+        root = self._legacy_tree()
+        _, reorg = self._run(root)
+        cross = reorg.cross_client_moves()
+        self.assertEqual(len(cross), 1)
+        self.assertIn("Nguyen, Bao", cross[0]["current"])
+        self.assertTrue(cross[0]["proposed"].startswith("Tran, Mei"))
+
+    def test_unplaceable_documents_are_left_exactly_where_they_are(self):
+        """Not swept into _Needs review.
+
+        Disturbing a file the firm can currently navigate, to park documents in
+        a folder nobody owns, makes things worse rather than better.
+        """
+        root = self._legacy_tree()
+        _, reorg = self._run(root)
+        left = [i for i in reorg.items if i["action"] == integrate.LEAVE]
+        self.assertEqual(len(left), 1)
+        self.assertIn("unreadable", left[0]["current"])
+        self.assertEqual(left[0]["proposed"], "")
+        self.assertTrue(os.path.exists(os.path.join(root, left[0]["current"])))
+
+    def test_a_document_already_in_place_is_not_counted_as_work(self):
+        root = self._legacy_tree()
+        result, reorg = self._run(root)
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        reorg.apply(result.plan, integrate.LocalFolderDestination(root, "move"),
+                    approvals, dry_run=False)
+        _, second = self._run(root)
+        self.assertEqual(second.count(integrate.MOVE), 0)
+        self.assertGreater(second.count(integrate.KEEP), 0)
+
+    def test_a_reorganisation_can_be_undone(self):
+        root = self._legacy_tree()
+        before = sorted(
+            os.path.relpath(os.path.join(base, name), root)
+            for base, _, names in os.walk(root) for name in names)
+
+        result, reorg = self._run(root)
+        moves = [{"doc_id": i["doc_id"],
+                  "from": os.path.join(root, i["current"]),
+                  "to": os.path.join(root, *i["proposed"].split("/"))}
+                 for i in reorg.moves]
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        rollback = integrate.write_rollback(
+            reorg.rollback_entries(approvals), root, "test")
+        _ = moves
+        reorg.apply(result.plan, integrate.LocalFolderDestination(root, "move"),
+                    approvals, dry_run=False)
+
+        undone = integrate.undo(rollback, dry_run=False)
+        self.assertEqual(undone.count("failed"), 0)
+        after = sorted(
+            os.path.relpath(os.path.join(base, name), root)
+            for base, _, names in os.walk(root) for name in names
+            if integrate.STATE_DIR not in base)
+        self.assertEqual(before, after)
+
+    def test_rollback_is_written_before_anything_moves(self):
+        """An interrupted reorganisation must still be undoable."""
+        root = self._legacy_tree()
+        _, reorg = self._run(root)
+        path = integrate.write_rollback(
+            [{"doc_id": "x", "from": "/a", "to": "/b"}], root, "early")
+        self.assertTrue(os.path.exists(path))
+        with open(path) as fh:
+            self.assertEqual(json.load(fh)["schema"], "advicefiler/rollback@1")
+        _ = reorg
+
+    def test_batch_client_follows_the_matched_folder_name(self):
+        """An inherited FSG must not create a folder beside the matched client."""
+        import tempfile
+        root = tempfile.mkdtemp()
+        os.makedirs(os.path.join(root, "Tran, Mei"))
+        with open(os.path.join(root, "Tran, Mei", "soa.txt"), "w") as fh:
+            fh.write("STATEMENT OF ADVICE\nPrepared for: Mei Tran\n"
+                     "Scope of advice: superannuation. Basis for advice.\n"
+                     "Our recommendation follows. Date of advice: 09/05/2024\n")
+        with open(os.path.join(root, "Tran, Mei", "fsg.txt"), "w") as fh:
+            fh.write("FINANCIAL SERVICES GUIDE Version 6. Prepared by Northwind "
+                     "Advice Pty Ltd, AFSL 222333. This guide explains the "
+                     "services we offer, how we are paid, and how to make a "
+                     "complaint through AFCA. Effective date: 1 February 2024.\n")
+        kb = KnowledgeBase.load()
+        docs, _ = extract.extract_directory(root, recursive=True)
+        result = pipeline.run(kb, docs,
+                              register=clients.ClientRegister.from_directory(root, kb))
+        self.assertEqual(result.batch_client, "Tran, Mei")
+        fsg = [r for r in result.records if r.doc_type == "fsg"][0]
+        self.assertTrue(fsg.placement.startswith("Tran, Mei"))
+
+    def test_apply_never_touches_documents_left_in_place(self):
+        """The property that makes it safe to point this at a live client file."""
+        root = self._legacy_tree()
+        result, reorg = self._run(root)
+        left = [i for i in reorg.items if i["action"] == integrate.LEAVE]
+        self.assertTrue(left)
+        # Approve everything, including the documents that must not move.
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        reorg.apply(result.plan, integrate.LocalFolderDestination(root, "move"),
+                    approvals, dry_run=False)
+        for item in left:
+            self.assertTrue(os.path.exists(os.path.join(root, item["current"])),
+                            "%s was moved despite being left in place"
+                            % item["current"])
+        self.assertFalse(os.path.exists(os.path.join(root, "_Needs review")))

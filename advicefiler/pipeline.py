@@ -88,6 +88,17 @@ def _resolve_clients(kb: KnowledgeBase, records: List[Record]) -> Optional[str]:
                 % (record.family_key, merged))
             record.family_key = merged
 
+    return batch_client(kb, records)
+
+
+def batch_client(kb: KnowledgeBase, records: List[Record]) -> Optional[str]:
+    """The single client this batch belongs to, if it has one.
+
+    Recomputed after register matching, because matching rewrites family keys to
+    the firm's own folder names. Computing it once, before, left an inherited FSG
+    filed under "Tran" beside the matched "Tran, Mei" — creating exactly the
+    duplicate client folder the register exists to prevent.
+    """
     threshold = kb.confidence_threshold
     distinct = set()
     for record in records:
@@ -150,6 +161,7 @@ def run(kb: KnowledgeBase, documents: List[ExtractedDocument],
     result.register = register
     if register is not None:
         _match_clients(kb, result, register)
+        result.batch_client = batch_client(kb, result.records)
 
     # 3. place
     result.grouping = events.build_events(kb, result.records)

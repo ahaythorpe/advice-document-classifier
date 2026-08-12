@@ -353,7 +353,13 @@ class DestinationAdapter(object):
     is_cloud = False
 
     def apply(self, plan: FolderPlan, approvals: Dict[str, Dict[str, Any]],
-              dry_run: bool = True) -> ApplyResult:
+              dry_run: bool = True,
+              only: Optional[set] = None) -> ApplyResult:
+        """``only`` restricts filing to a set of doc_ids, whatever the plan says.
+
+        Reorganisation needs this: the plan has a destination for every document,
+        including the ones a reorganisation must not touch.
+        """
         raise NotImplementedError
 
 
@@ -406,7 +412,8 @@ class LocalFolderDestination(DestinationAdapter):
     # -- apply --------------------------------------------------------------
 
     def apply(self, plan: FolderPlan, approvals: Dict[str, Dict[str, Any]],
-              dry_run: bool = True) -> ApplyResult:
+              dry_run: bool = True,
+              only: Optional[set] = None) -> ApplyResult:
         result = ApplyResult("%s -> %s" % (self.name, self.root), dry_run)
         state = self._load_state()
         audit = []  # type: List[Dict[str, Any]]
@@ -415,6 +422,12 @@ class LocalFolderDestination(DestinationAdapter):
         for planned in plan.files:
             record = planned.record
             doc_id = record.doc_id
+            if only is not None and doc_id not in only:
+                result.items.append(AppliedItem(
+                    doc_id, record.name, "", "skipped",
+                    "not in this operation's scope"))
+                continue
+
             decision = approvals.get(doc_id, {})
             verdict = decision.get("decision", PENDING)
 
@@ -657,3 +670,167 @@ def _same_content(a: str, b: str) -> bool:
     except (IOError, OSError):
         return False
 
+
+
+# ---------------------------------------------------------------------------
+# Reorganising a back-catalogue
+# ---------------------------------------------------------------------------
+
+KEEP, MOVE, LEAVE = "already in place", "move", "left in place"
+
+
+class Reorganisation(object):
+    """What would change if an existing filed tree were re-filed.
+
+    Most firms' real problem is not the next document — it is the decade of
+    documents already filed by six different people to four different
+    conventions. That is also the most dangerous thing this tool can be pointed
+    at, so three rules apply:
+
+    * a document already in the right place is not touched, and is reported as
+      such rather than counted as work;
+    * a document the tool cannot confidently place is LEFT WHERE IT IS. It is
+      not swept into _Needs review — disturbing a file the firm can currently
+      navigate, in order to park documents in a folder nobody owns, makes things
+      worse;
+    * every move is written to a rollback file before it happens.
+    """
+
+    def __init__(self, root: str) -> None:
+        self.root = os.path.abspath(root)
+        self.items = []  # type: List[Dict[str, Any]]
+
+    def add(self, record: Any, current: str, proposed: str, action: str,
+            note: str = "") -> None:
+        self.items.append({"doc_id": record.doc_id, "name": record.name,
+                           "type": record.doc_type, "confidence": record.confidence,
+                           "client": record.family_key, "current": current,
+                           "proposed": proposed, "action": action, "note": note})
+
+    def count(self, action: str) -> int:
+        return sum(1 for i in self.items if i["action"] == action)
+
+    @property
+    def moves(self) -> List[Dict[str, Any]]:
+        return [i for i in self.items if i["action"] == MOVE]
+
+    def cross_client_moves(self) -> List[Dict[str, Any]]:
+        """Moves that change which client a document sits under.
+
+        The highest-risk category by a distance: if the classifier is wrong, a
+        document leaves the file it belongs to AND contaminates one it does not.
+        Called out separately so a reviewer reads these first.
+        """
+        out = []
+        for item in self.moves:
+            current_top = item["current"].split(os.sep)[0] if item["current"] else ""
+            proposed_top = item["proposed"].split("/")[0] if item["proposed"] else ""
+            if current_top and proposed_top and current_top != proposed_top:
+                out.append(item)
+        return out
+
+    def summary(self) -> str:
+        return ("%d already in place, %d to move (%d across clients), %d left in "
+                "place" % (self.count(KEEP), self.count(MOVE),
+                           len(self.cross_client_moves()), self.count(LEAVE)))
+
+    def approved_move_ids(self, approvals: Dict[str, Dict[str, Any]]) -> set:
+        return set(item["doc_id"] for item in self.moves
+                   if approvals.get(item["doc_id"], {}).get("decision") == APPROVE)
+
+    def rollback_entries(self, approvals: Dict[str, Dict[str, Any]]
+                         ) -> List[Dict[str, str]]:
+        approved = self.approved_move_ids(approvals)
+        return [{"doc_id": item["doc_id"],
+                 "from": os.path.join(self.root, item["current"]),
+                 "to": os.path.join(self.root, *item["proposed"].split("/"))}
+                for item in self.moves if item["doc_id"] in approved]
+
+    def apply(self, plan: FolderPlan, destination: "DestinationAdapter",
+              approvals: Dict[str, Dict[str, Any]],
+              dry_run: bool = True) -> ApplyResult:
+        """Move only the approved moves — never the documents left in place.
+
+        This lives here rather than in the caller on purpose. "Documents that
+        could not be placed are not disturbed" is the property that makes it safe
+        to point this at a live client file, and a property enforced by whoever
+        happens to be calling is not enforced at all: the plan has a destination
+        for every document, including the ones in _Needs review.
+        """
+        approved = self.approved_move_ids(approvals)
+        return destination.apply(plan, approvals, dry_run=dry_run, only=approved)
+
+
+def plan_reorganisation(result: PipelineResult, root: str) -> Reorganisation:
+    """Compare where documents are now with where they would be filed."""
+    reorg = Reorganisation(root)
+    plan = result.plan
+    if plan is None:
+        return reorg
+
+    for planned in plan.files:
+        record = planned.record
+        current = record.name          # relative to root, from recursive extraction
+        proposed = planned.path
+
+        if record.needs_review:
+            reasons = "; ".join(f.message for f in record.placement_flags)
+            reorg.add(record, current, "", LEAVE,
+                      "not confidently placed, so not disturbed: %s" % reasons)
+            continue
+
+        if os.path.normpath(current) == os.path.normpath(proposed):
+            reorg.add(record, current, proposed, KEEP, "")
+            continue
+
+        reorg.add(record, current, proposed, MOVE, planned.rationale)
+    return reorg
+
+
+def write_rollback(moves: List[Dict[str, str]], root: str, run: str) -> str:
+    """Record every move before making it, so it can be undone.
+
+    Reorganising a live client file is the least reversible thing here. Writing
+    the rollback first means an interrupted run is still undoable.
+    """
+    path = os.path.join(root, STATE_DIR, "rollback-%s.json" % run)
+    _ensure_parent(path)
+    with open(path, "w") as fh:
+        json.dump({"schema": "advicefiler/rollback@1", "root": root,
+                   "run": run, "moves": moves}, fh, indent=2)
+        fh.write("\n")
+    harden(path)
+    return path
+
+
+def undo(rollback_path: str, dry_run: bool = True) -> ApplyResult:
+    """Put everything back where a reorganisation found it."""
+    with open(rollback_path, "r") as fh:
+        payload = json.load(fh)
+    if payload.get("schema") != "advicefiler/rollback@1":
+        raise IntegrationError("%s is not a rollback file" % rollback_path)
+
+    result = ApplyResult("undo %s" % os.path.basename(rollback_path), dry_run)
+    for move in reversed(payload.get("moves", [])):
+        source, target = move["to"], move["from"]
+        if not os.path.exists(source):
+            result.items.append(AppliedItem(move.get("doc_id", "-"), source, target,
+                                            "skipped", "no longer at the moved-to path"))
+            continue
+        if os.path.exists(target):
+            result.items.append(AppliedItem(move.get("doc_id", "-"), source, target,
+                                            "skipped", "original path is occupied"))
+            continue
+        if dry_run:
+            result.items.append(AppliedItem(move.get("doc_id", "-"), source, target,
+                                            "filed", "dry run"))
+            continue
+        try:
+            _ensure_parent(target)
+            shutil.move(source, target)
+            result.items.append(AppliedItem(move.get("doc_id", "-"), source, target,
+                                            "filed", "restored"))
+        except (IOError, OSError) as exc:
+            result.items.append(AppliedItem(move.get("doc_id", "-"), source, target,
+                                            "failed", str(exc)))
+    return result

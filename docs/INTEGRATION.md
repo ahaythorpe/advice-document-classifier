@@ -194,6 +194,70 @@ on paper — and it fails halfway through a batch, not at the start.
 
 ---
 
+## 4a. Reorganising a back-catalogue
+
+Most firms' real problem is not the next document. It is the decade already
+filed, by six people, to four conventions.
+
+```bash
+# 1. what would change — reads the tree, changes nothing
+python3 harness.py --reorganise "/Volumes/Advice/Clients"
+
+# 2. a decision sheet, then a dry run
+python3 harness.py --reorganise "/Volumes/Advice/Clients" \
+    --emit-approvals out/reorg.json
+python3 harness.py --reorganise "/Volumes/Advice/Clients" \
+    --approved out/reorg.json
+
+# 3. move, with a rollback file written first
+python3 harness.py --reorganise "/Volumes/Advice/Clients" \
+    --approved out/reorg.json --commit
+
+# and if it was wrong
+python3 harness.py --undo "/Volumes/Advice/Clients/_advicefiler/rollback-*.json" \
+    --commit
+```
+
+`--reorganise` reads the tree recursively, uses **that tree's own client folders
+as the register** (the firm's existing structure is what is being conformed to,
+not replaced), and moves rather than copies.
+
+Three rules make this safe enough to point at a live client file:
+
+* **A document already in the right place is not touched**, and is reported as
+  "already in place" rather than counted as work.
+* **A document that cannot be confidently placed is left exactly where it is.**
+  It is *not* swept into `_Needs review`. Disturbing a file the firm can
+  currently navigate, in order to park documents in a folder nobody owns, makes
+  things worse. This is enforced inside `Reorganisation.apply()`, not by the
+  caller — a safety property that depends on who is calling is not enforced.
+* **Every move is written to a rollback file before it happens**, so an
+  interrupted run is still undoable.
+
+Moves that change which client a document sits under are listed separately and
+first. They are the highest-risk category by a distance: if the classifier is
+wrong, the document leaves the file it belongs to *and* contaminates one it does
+not.
+
+## 4b. New clients
+
+A client not in the register is not created silently. `new_client_proposed`
+queues the document and asks once — per client, not per document:
+
+```bash
+python3 harness.py --input input/smith --clients register.json \
+    --emit-new-clients out/new.json
+$EDITOR out/new.json                       # set "confirm": true on the real ones
+python3 harness.py --clients register.json --accept-new-clients out/new.json
+```
+
+Confirmed clients join the register, and every later document for them files
+without asking. A misspelling, a married name, an OCR-damaged surname or one
+partner of an existing household all look exactly like a new client — which is
+why the question is asked once rather than never.
+
+---
+
 ## 5. The manifest
 
 `advicefiler/manifest@1`. Stable keys; additions are backwards-compatible.
