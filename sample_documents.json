@@ -1,0 +1,45 @@
+{
+  "note": "Stand-in for text extracted from real PDFs. Each 'text' field is what an extractor would hand the classifier. Deliberately includes clean cases AND broken ones so flags fire.",
+  "documents": [
+    {
+      "file": "scan_001.pdf",
+      "text": "FINANCIAL SERVICES GUIDE Version 4. Prepared by Acme Advice Pty Ltd, AFSL 111222. This guide explains the services we offer, how we are paid, our associations, and how to make a complaint through AFCA. Effective date: 15 January 2024."
+    },
+    {
+      "file": "scan_002.pdf",
+      "text": "FACT FIND - CLIENT DATA FORM. Client: Linh Nguyen & David Nguyen. Assets and liabilities, income and expenses, goals and objectives, dependants. Completed 2 March 2024. Signed by client confirming accuracy."
+    },
+    {
+      "file": "scan_003.pdf",
+      "text": "INVESTOR RISK PROFILE QUESTIONNAIRE. Client: Linh & David Nguyen. Responses scored. Resulting risk category: Balanced. Date: 2 March 2024."
+    },
+    {
+      "file": "scan_004.pdf",
+      "text": "STATEMENT OF ADVICE prepared for Linh Nguyen and David Nguyen. Adviser: J. Smith, Authorised Representative 445566, Acme Advice AFSL 111222. Scope of advice: retirement and superannuation consolidation. Basis for advice and reasoning. Recommendations: consolidate three super accounts into AwesomeSuper. Costs of switching and lost benefits disclosed. Remuneration and conflicts disclosed. Date of advice: 14 March 2024."
+    },
+    {
+      "file": "scan_005.pdf",
+      "text": "AUTHORITY TO PROCEED. Client: Linh & David Nguyen. I authorise my adviser to implement the recommendations in the Statement of Advice dated 14 March 2024. Signature: L Nguyen, D Nguyen. Date signed: 14 March 2024."
+    },
+    {
+      "file": "scan_006.pdf",
+      "text": "PRODUCT DISCLOSURE STATEMENT - AwesomeSuper Fund. Issued by AwesomeSuper Ltd, AFSL 999888. Product features, fees and costs, risks. Consumer advisory warning. Effective date 1 January 2024."
+    },
+    {
+      "file": "scan_007.pdf",
+      "text": "RECORD OF ADVICE. Client: Linh & David Nguyen. Further advice referencing prior Statement of Advice dated 14 March 2024. Recommendation: increase life insurance cover following the birth of a child. No material change in basis of advice. Date: 10 September 2025."
+    },
+    {
+      "file": "scan_008.pdf",
+      "text": "AUTHORITY TO PROCEED. Client: Linh & David Nguyen. I authorise implementation of the insurance recommendation. Date signed: 10 September 2025."
+    },
+    {
+      "file": "scan_009.pdf",
+      "text": "AUTHORITY TO PROCEED. Client: Anish Patel. I authorise implementation of the recommendations in my Statement of Advice. Date signed: 3 June 2024."
+    },
+    {
+      "file": "scan_010.pdf",
+      "text": "xxxx illegible scan photocopied crooked fax cover sheet partial text ... acme ... page 2 of ... blank ..."
+    }
+  ]
+}

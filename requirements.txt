@@ -1,0 +1,8 @@
+# Phase 1 runs with no dependencies at all against sample_documents.json.
+# These are needed only to read real PDFs and Word documents (build step 3).
+#
+#   python3 -m pip install -r requirements.txt
+
+pypdf>=4.0.0            # fast text extraction, first choice
+pdfplumber>=0.11.0      # slower, better on tabular fact finds; used as fallback
+python-docx>=1.1.0      # .docx advice records and fact finds

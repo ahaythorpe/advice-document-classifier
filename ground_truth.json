@@ -1,0 +1,93 @@
+{
+  "note": "Human-assigned correct answers for sample_documents.json. Without this file the failure log has no 'correct answer' column, and SYSTEM.md section 8 requires one: input, tool's answer, correct answer, one-line guess at why it missed. It is also the only thing that makes confidence calibration possible — you cannot tune a threshold against accuracy you are not measuring.",
+  "labelling_rules": [
+    "type: the knowledge-base document id, or null where the document is genuinely unidentifiable.",
+    "client: the family key (surnames, sorted, hyphen-joined), or null where the document is not client-specific.",
+    "event: a stable label for the advice event the document belongs to, or null where it belongs to none. The label is arbitrary; only the grouping it implies is checked.",
+    "needs_review: true where a human, seeing this document, would want it queued rather than filed. This is the reviewer's judgement about placement, not about whether every fact in the document is correct.",
+    "expect_flags: flags a correct run should raise. Compliance flags belong here too - a document can be filed correctly and still carry a finding."
+  ],
+  "real_documents_note": "Ground truth for real client documents must NOT be added to this file. It would carry client names into version control. Put it in input/ground_truth.json, which .gitignore excludes, and pass --ground-truth input/ground_truth.json.",
+  "documents": {
+    "scan_001.pdf": {
+      "type": "fsg",
+      "client": null,
+      "event": null,
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Licensee-wide FSG. No client name is correct behaviour, not a failure. This batch has two clients, so it cannot inherit one and belongs at licensee level."
+    },
+    "scan_002.pdf": {
+      "type": "fact_find",
+      "client": "Nguyen",
+      "event": "nguyen-2024-03-super",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Dated 2 March 2024, twelve days before the SOA it feeds. Correct order."
+    },
+    "scan_003.pdf": {
+      "type": "risk_profile",
+      "client": "Nguyen",
+      "event": "nguyen-2024-03-super",
+      "needs_review": false,
+      "expect_flags": ["risk_mismatch"],
+      "notes": "Assesses the clients as Balanced. The SOA it feeds never mentions Balanced, so the suitability link is unevidenced. Files correctly; the flag is a finding for a human, not a placement failure."
+    },
+    "scan_004.pdf": {
+      "type": "soa",
+      "client": "Nguyen",
+      "event": "nguyen-2024-03-super",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Anchors the March 2024 super consolidation event."
+    },
+    "scan_005.pdf": {
+      "type": "authority_to_proceed",
+      "client": "Nguyen",
+      "event": "nguyen-2024-03-super",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "The lookalike case from SYSTEM.md section 7. It cites 'the Statement of Advice dated 14 March 2024' and v0 classified it as an SOA on the strength of that mention. The citation is also what places it: it names its own advice record."
+    },
+    "scan_006.pdf": {
+      "type": "pds",
+      "client": null,
+      "event": "nguyen-2024-03-super",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Issuer material with no client name. It reaches the right event through the product name AwesomeSuper, which the SOA recommends."
+    },
+    "scan_007.pdf": {
+      "type": "roa",
+      "client": "Nguyen",
+      "event": "nguyen-2025-09-insurance",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Further-advice ROA citing the March 2024 SOA. A separate advice event eighteen months later, not part of the super event. The prior SOA is on file, so roa_without_soa must not fire."
+    },
+    "scan_008.pdf": {
+      "type": "authority_to_proceed",
+      "client": "Nguyen",
+      "event": "nguyen-2025-09-insurance",
+      "needs_review": false,
+      "expect_flags": [],
+      "notes": "Cites no advice record by date, so it places by direction and proximity: the nearest advice record on or before it is the September 2025 ROA."
+    },
+    "scan_009.pdf": {
+      "type": "authority_to_proceed",
+      "client": "Patel",
+      "event": null,
+      "needs_review": true,
+      "expect_flags": ["atp_without_advice_record"],
+      "notes": "An authorisation to implement advice that is not in the batch. High severity: either a bundle split was missed or the advice record is genuinely absent. Correctly identified but correctly unplaceable."
+    },
+    "scan_010.pdf": {
+      "type": null,
+      "client": null,
+      "event": null,
+      "needs_review": true,
+      "expect_flags": ["unknown_type"],
+      "notes": "Illegible scan. The only acceptable answer is an honest refusal."
+    }
+  }
+}

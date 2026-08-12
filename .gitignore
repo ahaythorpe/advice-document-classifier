@@ -1,0 +1,64 @@
+# =============================================================================
+# REAL CLIENT DATA — NEVER COMMIT
+# =============================================================================
+# This tool ingests real financial-advice files. Those files contain client PII:
+# names, addresses, assets and liabilities, income, dependants, and — where
+# insurance advice is involved — health disclosures. Nothing derived from a real
+# document may enter version control, including extracted text and run output.
+#
+# The rule is deny-by-default: real documents live under input/ and every
+# artefact produced from them lands under output/. Both are ignored wholesale.
+
+input/*
+!input/.gitkeep
+!input/README.md
+
+output/
+runs/
+extracted/
+
+# Belt and braces: no document binaries anywhere in the tree, regardless of path.
+*.pdf
+*.docx
+*.doc
+*.rtf
+*.tif
+*.tiff
+*.jpg
+*.jpeg
+*.png
+
+# Failure logs and calibration output quote source text verbatim.
+failure_log*.jsonl
+failure_log*.csv
+calibration*.json
+*.faillog
+
+# =============================================================================
+# Ordinary Python noise
+# =============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# =============================================================================
+# Editor / OS
+# =============================================================================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
