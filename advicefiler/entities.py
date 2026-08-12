@@ -287,6 +287,25 @@ def _read_names_at(text: str, start: int) -> Tuple[Optional[str], List[str], Opt
     return raw, unique, "-".join(unique)
 
 
+def extract_given_names(text: str) -> List[str]:
+    """Given names, which are what separate two households sharing a surname."""
+    for match in _CLIENT_LABELS.finditer(text):
+        raw, surnames, key = _read_names_at(text, match.end())
+        if not key:
+            continue
+        drop = set(s.lower() for s in surnames)
+        out = []
+        for part in re.split(r"\s*(?:&|\band\b|,)\s*", raw or ""):
+            for token in re.findall(r"[^\W\d_][\w'\-]*", part, re.UNICODE):
+                low = token.lower()
+                if low in drop or low in _NAME_TITLES or low in _NAME_STOPWORDS:
+                    continue
+                if token[:1].isupper():
+                    out.append(token)
+        return out
+    return []
+
+
 def merge_family_keys(keys: List[str]) -> Dict[str, str]:
     """Map narrower family keys onto wider ones where that is unambiguous.
 

@@ -18,6 +18,7 @@ from __future__ import annotations
 import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from . import clients
 from .entities import parse_date
 from .events import AdviceEvent, GroupingResult
 from .kb import KnowledgeBase
@@ -160,6 +161,36 @@ def _client_unidentified(ctx: Context) -> None:
         record.flag(ctx.kb, "client_unidentified",
                     "a %s is client-specific but no client name could be read; %s"
                     % (ctx.kb.abbrev(record.doc_type), detail))
+
+
+@rule("client_ambiguous_match")
+def _client_ambiguous_match(ctx: Context) -> None:
+    for record in ctx.records:
+        match = record.client_match
+        if match is None or match.verdict != clients.AMBIGUOUS:
+            continue
+        record.flag(ctx.kb, "client_ambiguous_match",
+                    "read the client as '%s', which %s"
+                    % (record.client_raw or record.family_key, match.reason))
+
+
+@rule("new_client_proposed")
+def _new_client_proposed(ctx: Context) -> None:
+    for record in ctx.records:
+        match = record.client_match
+        if match is None or match.verdict not in (clients.NEW, clients.UNCERTAIN):
+            continue
+        if match.verdict == clients.UNCERTAIN:
+            detail = ("%s. Confirm whether that is the same client under a "
+                      "different spelling, a married name, or one partner of the "
+                      "household — or genuinely somebody new" % match.reason)
+        else:
+            detail = ("%s. Confirm this is a new client; approving adds them to "
+                      "the register and no later document will ask again"
+                      % match.reason)
+        record.flag(ctx.kb, "new_client_proposed",
+                    "'%s' is not in the client register — %s."
+                    % (record.family_key or record.client_raw, detail))
 
 
 @rule("superseding_ambiguity")
@@ -340,6 +371,7 @@ def _fds_era_mismatch(ctx: Context) -> None:
 _ORDER = [
     "unknown_type", "low_confidence", "multi_doc_bundle",
     "advice_record_label_shift", "no_date", "client_unidentified",
+    "client_ambiguous_match", "new_client_proposed",
     "atp_without_advice_record", "event_ambiguous",
     "roa_without_soa", "fact_find_after_soa", "risk_mismatch",
     "fds_era_mismatch", "superseding_ambiguity",

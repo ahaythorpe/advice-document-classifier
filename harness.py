@@ -35,13 +35,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from typing import List, Optional
 
 from advicefiler import evaluate, extract, integrate, pipeline, report
 from advicefiler.classify import KeywordClassifier
 from advicefiler.kb import KnowledgeBase, KnowledgeBaseError
+from advicefiler.clients import ClientRegister
 from advicefiler.profiles import FilingProfile, ProfileError, available
+from advicefiler.security import harden, redact_manifest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_SAMPLES = os.path.join(HERE, "sample_documents.json")
@@ -82,6 +85,17 @@ def build_parser() -> argparse.ArgumentParser:
     integ.add_argument("--script-shell", choices=["bash", "powershell"], default="bash")
     integ.add_argument("--emit-approvals", metavar="PATH",
                        help="write a decision sheet for a human to edit")
+    integ.add_argument("--clients", metavar="PATH",
+                       help="the firm's existing client list: a CSV or JSON "
+                            "export, or a directory to read client folders from. "
+                            "Without it, client matching is off and the name read "
+                            "from the document is used as-is.")
+    integ.add_argument("--emit-new-clients", metavar="PATH",
+                       help="write the clients this batch would create, for "
+                            "confirmation before they exist")
+    integ.add_argument("--redact", action="store_true",
+                       help="strip client names and paths from exported files, "
+                            "keeping types, confidences, flags and structure")
 
     filing = p.add_argument_group("filing (desktop primary, cloud backup)")
     filing.add_argument("--dest-root", metavar="DIR",
@@ -121,16 +135,58 @@ def resolve_ground_truth(args):
     return evaluate.GroundTruth.load(path)
 
 
+def _redaction_vocabulary(kb) -> List[str]:
+    """Words that identify nobody and must survive redaction.
+
+    All from closed sets in the knowledge base: document labels, advice subjects,
+    special folder names. Keeping them is what makes a redacted manifest legible
+    enough that people actually use it.
+    """
+    words = []
+    for doc in kb.documents:
+        words += [doc["id"], kb.abbrev(doc["id"]), doc.get("category") or ""]
+        words += re.split(r"[\s/]+", doc.get("name", ""))
+    for subject in kb.subjects:
+        words += re.split(r"[\s/&]+", subject.get("label", ""))
+    for folder in kb.special_folders:
+        words += re.split(r"[\s/_]+", folder.get("name", ""))
+    return [w for w in words if len(w) > 1]
+
+
 def do_integration(args, result) -> int:
     """Exports, then preflight, then filing. Returns an exit code."""
     if args.export_manifest:
-        print("manifest : %s" % integrate.write_manifest(result, args.export_manifest))
+        if args.redact:
+            import json as _json
+            data = redact_manifest(integrate.manifest(result),
+                                   keep=_redaction_vocabulary(result.kb))
+            integrate._ensure_parent(args.export_manifest)
+            with open(args.export_manifest, "w") as fh:
+                _json.dump(data, fh, indent=2)
+                fh.write("\n")
+            harden(args.export_manifest)
+            print("manifest : %s (redacted)" % args.export_manifest)
+        else:
+            print("manifest : %s"
+                  % integrate.write_manifest(result, args.export_manifest))
+            harden(args.export_manifest)
     if args.export_csv:
         print("csv      : %s" % integrate.write_csv(result, args.export_csv))
     if args.export_script:
         root = args.dest_root or "/PATH/TO/CLIENTS"
         print("script   : %s" % integrate.write_script(
             result, args.export_script, root, args.script_shell))
+    if args.emit_new_clients and result.new_clients:
+        import json as _json
+        integrate._ensure_parent(args.emit_new_clients)
+        with open(args.emit_new_clients, "w") as fh:
+            _json.dump({"clients": [c.to_dict() for c in result.new_clients]},
+                       fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        harden(args.emit_new_clients)
+        print("new clients: %d written to %s — confirm, then append to your "
+              "register" % (len(result.new_clients), args.emit_new_clients))
+
     if args.emit_approvals:
         path = integrate.write_approvals(result, args.emit_approvals)
         print("approvals: %s" % path)
@@ -216,8 +272,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("extraction error: %s" % exc, file=sys.stderr)
         return 2
 
+    register = None
+    if args.clients:
+        try:
+            register = ClientRegister.load(args.clients, kb)
+        except (IOError, ValueError, OSError) as exc:
+            print("could not read client register %s: %s" % (args.clients, exc),
+                  file=sys.stderr)
+            return 2
+        print("client register: %d existing clients from %s\n"
+              % (len(register), args.clients))
+
     result = pipeline.run(kb, documents, classifier=KeywordClassifier(kb),
-                          extraction_failures=failures, profile=profile)
+                          extraction_failures=failures, profile=profile,
+                          register=register)
 
     report.print_header(result, extract.backend_status())
     report.print_scorecard(result, args.display)
@@ -237,6 +305,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                 rows = evaluate.failure_log_rows(
                     comparisons, evaluate.run_id(result.started), kb.version,
                     result.classifier_name)
+                if args.redact:
+                    from advicefiler.security import redact_failure_row
+                    rows = [redact_failure_row(r) for r in rows]
                 path = evaluate.write_failure_log(rows, args.failure_log)
                 print("failure log: %d row(s) appended to %s" % (len(rows), path))
                 print()

@@ -17,6 +17,7 @@ from .classify import Classifier, KeywordClassifier
 from .extract import ExtractedDocument
 from .kb import KnowledgeBase
 from .model import Record
+from .clients import ClientRegister
 from .profiles import FilingProfile
 
 
@@ -29,6 +30,8 @@ class PipelineResult(object):
         self.plan = None  # type: Optional[storage.FolderPlan]
         self.profile = None  # type: Optional[FilingProfile]
         self.batch_client = None  # type: Optional[str]
+        self.register = None  # type: Optional[ClientRegister]
+        self.new_clients = []  # type: List[Any]
         self.extraction_failures = []  # type: List[Dict[str, str]]
         self.started = None  # type: Optional[datetime.datetime]
 
@@ -49,6 +52,7 @@ def _enrich(kb: KnowledgeBase, record: Record) -> None:
     record.client_raw = raw
     record.surnames = surnames
     record.family_key = family
+    record.given_names = entities.extract_given_names(record.text) if family else []
     record.client_provenance = "read from document" if family else None
 
     hints = kb.hints(doc_type) if doc_type else {}
@@ -96,11 +100,41 @@ def _resolve_clients(kb: KnowledgeBase, records: List[Record]) -> Optional[str]:
     return list(distinct)[0] if len(distinct) == 1 else None
 
 
+def _match_clients(kb: KnowledgeBase, result: "PipelineResult",
+                   register: ClientRegister) -> None:
+    """Resolve each document's client against the firm's existing list.
+
+    Where a client matches, the firm's own folder name wins over ours — the
+    document belongs in the file they already have, spelled the way they already
+    spell it. Where it does not match, nothing is invented silently: the
+    new_client_proposed rule asks once.
+    """
+    from .clients import ClientEntry
+    proposed = {}
+    for record in result.records:
+        if not record.family_key or not kb.is_client_specific(record.doc_type):
+            continue
+        match = register.match(record.surnames, record.given_names)
+        record.client_match = match
+        if match.matched:
+            record.family_key = match.entry.folder_name
+            record.client_provenance = ("matched to the firm's existing client "
+                                        "%s (%.2f) — %s"
+                                        % (match.entry.folder_name, match.score,
+                                           match.reason))
+        elif "too closely" not in match.reason:
+            proposed.setdefault(
+                record.family_key,
+                ClientEntry.from_folder_name(record.family_key))
+    result.new_clients = list(proposed.values())
+
+
 def run(kb: KnowledgeBase, documents: List[ExtractedDocument],
         classifier: Optional[Classifier] = None,
         extraction_failures: Optional[List[Dict[str, str]]] = None,
         now: Optional[datetime.datetime] = None,
-        profile: Optional[FilingProfile] = None) -> PipelineResult:
+        profile: Optional[FilingProfile] = None,
+        register: Optional[ClientRegister] = None) -> PipelineResult:
     classifier = classifier or KeywordClassifier(kb)
     result = PipelineResult(kb, classifier.name)
     result.extraction_failures = extraction_failures or []
@@ -113,6 +147,9 @@ def run(kb: KnowledgeBase, documents: List[ExtractedDocument],
         result.records.append(record)
 
     result.batch_client = _resolve_clients(kb, result.records)
+    result.register = register
+    if register is not None:
+        _match_clients(kb, result, register)
 
     # 3. place
     result.grouping = events.build_events(kb, result.records)

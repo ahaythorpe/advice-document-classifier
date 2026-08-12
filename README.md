@@ -24,7 +24,7 @@ No dependencies needed to run against the synthetic samples:
 python3 harness.py                      # ten sample documents, full pipeline
 python3 harness.py --display new        # with the teaching layer switched on
 python3 harness.py --calibrate          # sweep the confidence threshold
-python3 -m unittest discover -s tests   # 51 regression tests
+python3 -m unittest discover -s tests   # 64 regression tests
 ```
 
 To read real PDFs and Word files:
@@ -154,6 +154,52 @@ approvals file does not approve. Documents queued for review default to
 idempotent: filing is keyed on a content hash, so the same batch applied twice
 does not produce two copies. See `docs/INTEGRATION.md`.
 
+## Landing in the right client folder
+
+Reading a name off a document is half the job. A firm with 800 client folders
+needs the document to land in the *existing* one — not in an 801st, spelled
+slightly differently. That failure is silent: `Nguyen` beside an existing
+`Nguyen, Linh & David` raises no error and loses no file, and someone finds out
+years later during a compliance review.
+
+```bash
+python3 harness.py --input input/smith --clients "/Volumes/Advice/Clients"
+python3 harness.py --input input/smith --clients clients.csv \
+    --emit-new-clients out/new-clients.json
+```
+
+The register comes from a practice-management export (CSV or JSON) or from the
+destination itself — the firm's existing folder tree is the most accurate client
+list they have, and needs no export and no IT ticket. Matching handles both
+`Nguyen, Linh & David` and `Linh & David Nguyen` conventions, uses given names to
+separate two households sharing a surname, and survives OCR damage and lost
+diacritics. Where it cannot decide, it says so: `client_ambiguous_match` blocks
+filing, and `new_client_proposed` asks once per client rather than once per
+document.
+
+Deliberately **not** an LLM. Client identity must resolve the same way every time
+and a reviewer must be able to see why. Where the model earns its place is
+upstream at step 4 — pulling an identity out of a document that never states one
+plainly — and whatever it extracts still comes through this matcher.
+
+Without `--clients`, matching is off and the name read from the document is used
+as-is, so a first run against an unknown firm still works.
+
+## Security
+
+No network calls at all — `advicefiler/` imports nothing that opens a socket, and
+there is a test asserting it. Client text cannot leave the machine by accident.
+(That changes at step 4, and is a decision for the licensee, not a library
+upgrade.)
+
+`--redact` replaces client names and paths with stable, non-reversible
+pseudonyms while keeping types, confidences, flags and event structure — enough
+to debug a classification or show a vendor the integration, with no way to say
+whose file it was. Filed documents, audit log, state and register are owner-only.
+Every filed document is recorded with its SHA-256, which answers the question a
+compliance reviewer actually asks. Encryption at rest is deliberately left to the
+volume; see `docs/SECURITY.md` for why.
+
 ## Real documents and client data
 
 Real advice files contain client PII: names, assets and liabilities, income,
@@ -200,6 +246,8 @@ advicefiler/
   events.py            advice-event grouping
   flags.py             the edge-case rules engine
   profiles.py          firm filing schemes (folder layout, vocabulary, limits)
+  clients.py           matching a document to the firm's existing client
+  security.py          redaction, file hygiene, audit digests
   storage.py           the folder plan (data only — nothing is written)
   integrate.py         manifest/CSV/script export, approvals, destinations
   evaluate.py          ground truth, failure log, confidence calibration
@@ -209,9 +257,10 @@ docs/
   ROADMAP.md           the build plan: what gates each step, where the risk is
   ARCHITECTURE.md      how the pieces fit and why
   INTEGRATION.md       connecting to a firm's existing filing system
+  SECURITY.md          what is protected, how, and what is deliberately not done
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
 legacy/harness_v0.py   the keyword prototype, kept for before/after comparison
-tests/                 51 regression tests, one per bug v0 actually made
+tests/                 64 regression tests, one per bug v0 actually made
 ```
 
 ## Build sequence

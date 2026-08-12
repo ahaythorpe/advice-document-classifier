@@ -1148,6 +1148,22 @@
         "severity": "medium",
         "class": "placement",
         "class_note": "No client means no outer axis, and the filing model needs both axes to agree before anything is placed."
+      },
+      {
+        "id": "client_ambiguous_match",
+        "trigger": "A document's client name matches two or more entries in the client register closely enough that neither can be ruled out",
+        "why": "Filing under the wrong client is the most damaging placement error this system can make: the document is gone from the file it belongs to and contaminating one it does not, and both failures are silent. Two plausible clients is a question, never a coin toss.",
+        "severity": "high",
+        "class": "placement",
+        "class_note": "Neither candidate can be chosen, so the outer filing axis has no answer."
+      },
+      {
+        "id": "new_client_proposed",
+        "trigger": "A document's client does not match any entry in the client register well enough to be an existing client",
+        "why": "Usually correct — firms take on new clients. But it is also exactly what a misspelling, an OCR-damaged surname, a married name, or a document naming only one partner looks like. Confirming once per client is cheap; discovering a duplicated client file years into a compliance review is not.",
+        "severity": "medium",
+        "class": "placement",
+        "class_note": "Creating a client folder is a decision about the firm's file structure, not about one document. It is confirmed once and then never asked again."
       }
     ],
     "classes": {
@@ -1287,5 +1303,29 @@
       "high growth",
       "aggressive"
     ]
+  },
+  "client_matching": {
+    "purpose": "Deciding whether a document belongs to a client the firm ALREADY has, or to a genuinely new one. Reading a name off a document is only half the job: a firm with 800 client folders needs the document to land in the existing one, not in a ninth-hundredth folder spelled slightly differently.",
+    "why_this_is_the_risk": "Creating 'Nguyen' beside an existing 'Nguyen, Linh & David' does not look like an error. Nothing is flagged, nothing is lost, and the client's file is now in two places — which a compliance reviewer discovers years later while trying to reconstruct an advice event. Silent fragmentation is worse than a visible refusal.",
+    "sources": [
+      "A client export from the practice-management system (CSV or JSON)",
+      "The existing destination itself: top-level folders scanned and parsed as client names",
+      "Manual entry, for a firm with no exportable register"
+    ],
+    "no_register_behaviour": "Where no register is supplied, matching is disabled and the family key read from the document is used as-is. This keeps a first run against an unknown firm working, and means the register is an upgrade rather than a prerequisite.",
+    "signals": {
+      "exact_key": "The normalised family key matches an entry's key. Decisive.",
+      "surname_set": "The set of surnames matches. Strong — this is what makes 'Linh & David Nguyen' and 'Linh Nguyen and David Nguyen' the same household.",
+      "surname_subset": "One surname set contains the other. Medium: a document naming one partner of a couple. Corroboration from given names is what turns this into a match.",
+      "fuzzy_surname": "Near-identical spelling. Carries OCR damage and diacritic loss — Nguyen/Nguyễn, McDonald/MacDonald, Sorensen/Sørensen — which are the same client, and a scanner or an export is what separated them.",
+      "given_name": "Given names in common. Rarely decisive alone; decisive between two households sharing a surname, which is the case that matters most."
+    },
+    "thresholds": {
+      "match": 0.8,
+      "ambiguous_margin": 0.12,
+      "propose_new_below": 0.55,
+      "note": "Between propose_new_below and match sits a band that is neither: too good to be a new client, not good enough to file. That band is a question for a human, and having it is the point."
+    },
+    "human_in_the_loop": "A new client is confirmed once, not once per document. Approving it adds the entry to the register, and every later document for that client matches without asking again."
   }
 }

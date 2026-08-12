@@ -17,8 +17,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from advicefiler import (entities, evaluate, extract, flags,  # noqa: E402
-                         integrate, pipeline)
+from advicefiler import (clients, entities, evaluate,  # noqa: E402
+                         extract, flags, integrate, pipeline, security)
 from advicefiler.classify import KeywordClassifier  # noqa: E402
 from advicefiler.kb import KnowledgeBase  # noqa: E402
 
@@ -482,3 +482,139 @@ class TestRegressions(unittest.TestCase):
         mirrored = backup.mirror(applied, os.path.join(tmp, "primary"),
                                  dry_run=False)
         self.assertEqual(mirrored.count("failed"), 1)
+
+
+class TestClientMatching(unittest.TestCase):
+    """Matching a document to the firm's EXISTING client, not a new folder."""
+
+    @classmethod
+    def setUpClass(cls):
+        import tempfile
+        cls.kb = KnowledgeBase.load()
+        cls.root = tempfile.mkdtemp()
+        for name in ("Nguyen, Linh & David", "Nguyen, Bao", "Patel, Anish",
+                     "Sørensen, Lars"):
+            os.makedirs(os.path.join(cls.root, name))
+        cls.register = clients.ClientRegister.from_directory(cls.root, cls.kb)
+
+    def test_reads_existing_folders_as_the_register(self):
+        self.assertEqual(len(self.register), 4)
+
+    def test_given_names_decide_between_two_households_sharing_a_surname(self):
+        """The whole point. Both are Nguyen; only given names separate them."""
+        first = self.register.match(["Nguyen"], ["Linh", "David"])
+        second = self.register.match(["Nguyen"], ["Bao"])
+        self.assertEqual(first.verdict, clients.MATCHED)
+        self.assertEqual(first.entry.folder_name, "Nguyen, Linh & David")
+        self.assertEqual(second.verdict, clients.MATCHED)
+        self.assertEqual(second.entry.folder_name, "Nguyen, Bao")
+
+    def test_a_surname_with_no_given_names_is_ambiguous_not_a_guess(self):
+        match = self.register.match(["Nguyen"], [])
+        self.assertEqual(match.verdict, clients.AMBIGUOUS)
+        self.assertIsNone(match.entry)
+
+    def test_ocr_damaged_surname_still_matches(self):
+        """A scanner that loses the slash in Sørensen must not create a client.
+
+        The non-decomposing letters (ø æ ß ł đ) are the trap: NFKD leaves them
+        alone, so stripping combining marks is not enough.
+        """
+        match = self.register.match(["Sorensen"], ["Lars"])
+        self.assertEqual(match.verdict, clients.MATCHED)
+        self.assertEqual(match.entry.folder_name, "Sørensen, Lars")
+
+    def test_a_genuinely_new_client_is_proposed_not_invented(self):
+        match = self.register.match(["Okafor", "Tran"], ["Mei"])
+        self.assertEqual(match.verdict, clients.NEW)
+        self.assertIsNone(match.entry)
+
+    def test_surname_first_and_surname_last_folder_conventions(self):
+        a = clients.ClientEntry.from_folder_name("Nguyen, Linh & David")
+        b = clients.ClientEntry.from_folder_name("Linh & David Nguyen")
+        self.assertEqual(a.normalised_surnames, {"nguyen"})
+        self.assertEqual(b.normalised_surnames, {"nguyen"})
+        self.assertIn("linh", a.normalised_givens)
+        self.assertIn("linh", b.normalised_givens)
+
+    def test_matched_documents_take_the_firms_folder_name(self):
+        result = pipeline.run(self.kb, load_samples(), register=self.register)
+        soa = [r for r in result.records if r.name == "scan_004.pdf"][0]
+        self.assertEqual(soa.family_key, "Nguyen, Linh & David")
+        self.assertIn("matched to the firm's existing client",
+                      soa.client_provenance)
+
+    def test_matching_is_off_without_a_register(self):
+        """A first run against an unknown firm must still work."""
+        result = pipeline.run(self.kb, load_samples())
+        soa = [r for r in result.records if r.name == "scan_004.pdf"][0]
+        self.assertEqual(soa.family_key, "Nguyen")
+        self.assertIsNone(soa.client_match)
+
+
+class TestSecurity(unittest.TestCase):
+    def test_the_package_makes_no_network_calls(self):
+        """A property worth demonstrating to a licensee, not asserting."""
+        self.assertEqual(security.network_modules_used(), [])
+
+    def test_redaction_removes_names_but_keeps_the_domain_vocabulary(self):
+        kb = KnowledgeBase.load()
+        result = pipeline.run(kb, load_samples())
+        keep = ["Retirement", "Super", "Consolidation", "Insurance", "SOA",
+                "FactFind", "ATP", "Needs", "review", "Licensee"]
+        data = security.redact_manifest(integrate.manifest(result), keep=keep)
+        blob = json.dumps(data)
+        self.assertNotIn("Nguyen", blob)
+        self.assertNotIn("Patel", blob)
+        self.assertIn("Retirement", blob)     # a subject identifies nobody
+        self.assertIn("SOA", blob)
+        self.assertTrue(data["redacted"])
+
+    def test_pseudonyms_are_stable_and_not_reversible(self):
+        a = security.pseudonym("Nguyen")
+        self.assertEqual(a, security.pseudonym("Nguyen"))
+        self.assertNotEqual(a, security.pseudonym("Nguyen", salt="firm-2"))
+        self.assertNotIn("nguyen", a.lower())
+
+    def test_filed_documents_and_state_are_owner_only(self):
+        import tempfile, stat
+        tmp = tempfile.mkdtemp()
+        batch = os.path.join(tmp, "batch")
+        os.makedirs(batch)
+        with open(os.path.join(batch, "soa.txt"), "w") as fh:
+            fh.write("STATEMENT OF ADVICE\nPrepared for: Mei Tran\n"
+                     "Scope of advice: superannuation. Basis for advice.\n"
+                     "Our recommendation follows. Date of advice: 09/05/2024\n")
+        docs, failures = extract.extract_directory(batch)
+        result = pipeline.run(KnowledgeBase.load(), docs,
+                              extraction_failures=failures)
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        root = os.path.join(tmp, "dest")
+        applied = integrate.LocalFolderDestination(root).apply(
+            result.plan, approvals, dry_run=False)
+        filed = [i for i in applied.items if i.action == "filed"]
+        self.assertEqual(len(filed), 1)
+        mode = stat.S_IMODE(os.stat(filed[0].destination).st_mode)
+        self.assertEqual(mode & 0o077, 0, "filed document is group/world readable")
+
+    def test_audit_records_a_digest_of_what_was_filed(self):
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        batch = os.path.join(tmp, "batch")
+        os.makedirs(batch)
+        with open(os.path.join(batch, "soa.txt"), "w") as fh:
+            fh.write("STATEMENT OF ADVICE\nPrepared for: Mei Tran\n"
+                     "Scope of advice: superannuation. Basis for advice.\n"
+                     "Our recommendation follows. Date of advice: 09/05/2024\n")
+        docs, _ = extract.extract_directory(batch)
+        result = pipeline.run(KnowledgeBase.load(), docs)
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        root = os.path.join(tmp, "dest")
+        integrate.LocalFolderDestination(root).apply(
+            result.plan, approvals, dry_run=False)
+        audit = os.path.join(root, integrate.STATE_DIR, "audit.jsonl")
+        rows = [json.loads(line) for line in open(audit)]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(len(rows[0]["sha256"]), 64)

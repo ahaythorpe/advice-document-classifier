@@ -76,6 +76,8 @@ class Record(object):
         self.surnames = []  # type: List[str]
         self.family_key = None  # type: Optional[str]
         self.client_provenance = None  # type: Optional[str]
+        self.client_match = None  # type: Optional[Any]
+        self.given_names = []  # type: List[str]
 
         # Dates
         self.own_date = None  # type: Optional[ParsedDate]

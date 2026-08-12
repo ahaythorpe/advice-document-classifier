@@ -35,6 +35,7 @@ import shutil
 from typing import Any, Dict, List, Optional, Tuple
 
 from .pipeline import PipelineResult
+from .security import file_digest, harden
 from .storage import FolderPlan, PlannedFile
 
 MANIFEST_SCHEMA = "advicefiler/manifest@1"
@@ -391,6 +392,8 @@ class LocalFolderDestination(DestinationAdapter):
         _ensure_parent(self._state_path)
         with open(self._state_path, "w") as fh:
             json.dump(state, fh, indent=2, sort_keys=True)
+        harden(os.path.dirname(self._state_path))
+        harden(self._state_path)
 
     def _audit(self, rows: List[Dict[str, Any]]) -> None:
         path = os.path.join(self.root, STATE_DIR, "audit.jsonl")
@@ -398,6 +401,7 @@ class LocalFolderDestination(DestinationAdapter):
         with open(path, "a") as fh:
             for row in rows:
                 fh.write(json.dumps(row, sort_keys=True) + "\n")
+        harden(path)
 
     # -- apply --------------------------------------------------------------
 
@@ -467,12 +471,18 @@ class LocalFolderDestination(DestinationAdapter):
                                                 str(exc)))
                 continue
 
+            harden(os.path.dirname(target))
+            harden(target)
             state[doc_id] = target
             result.items.append(AppliedItem(doc_id, source, target, "filed", self.mode))
             audit.append({"at": stamp, "doc_id": doc_id, "action": self.mode,
                           "source": source, "destination": target,
                           "type": record.doc_type, "client": record.family_key,
-                          "confidence": record.confidence})
+                          "confidence": record.confidence,
+                          # Evidence that the filed copy is the document that was
+                          # classified — the question a compliance reviewer asks
+                          # about any automated filing step.
+                          "sha256": file_digest(target)})
 
         if not dry_run:
             self._save_state(state)
