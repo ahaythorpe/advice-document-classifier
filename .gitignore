@@ -34,6 +34,11 @@ failure_log*.csv
 calibration*.json
 *.faillog
 
+# Generated demonstration site — rebuild with `python3 build_web.py`.
+# .vercel holds the project id and belongs to whoever deployed it.
+web/
+.vercel/
+
 # =============================================================================
 # Ordinary Python noise
 # =============================================================================

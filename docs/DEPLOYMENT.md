@@ -78,7 +78,20 @@ shell fixes that properly.
 
 ## The Vercel demo
 
-Worth building, as a **showcase with synthetic data only**:
+**Live: https://advice-document-classifier.vercel.app**
+
+```bash
+python3 build_web.py
+vercel deploy --cwd web --prod
+```
+
+`build_web.py` runs the pipeline over the synthetic samples once per filing
+profile and writes a single self-contained HTML file. Switching the scheme in the
+page swaps between precomputed results, which demonstrates the point worth
+demonstrating: the folders change and the classification, the advice events and
+the flags do not.
+
+It is a **showcase with synthetic data only**:
 
 * the same interface, the same sample documents, no upload, no file writing;
 * precomputed output — a static manifest, so there is no server and no place for
@@ -87,4 +100,10 @@ Worth building, as a **showcase with synthetic data only**:
 
 That is genuinely useful for showing a firm what the tool does before asking them
 for anything. What it must not become is a place someone drags a real client
-folder, so it should have no upload control at all rather than a disabled one.
+folder, so it has **no upload control at all** rather than a disabled one — no
+form, no file input, no fetch, and a Content-Security-Policy of
+`default-src 'none'; form-action 'none'` so the page cannot originate a request
+even if someone later adds one by accident.
+
+The build also strips `source_path` from every document and the `generated`
+timestamp, so nothing about the machine that built it is published.
