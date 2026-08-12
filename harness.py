@@ -178,7 +178,8 @@ def do_integration(args, result) -> int:
         except integrate.IntegrationError as exc:
             print("backup refused: %s" % exc, file=sys.stderr)
             return 1
-        mirrored = backup.mirror(applied, dry_run=not args.commit)
+        mirrored = backup.mirror(applied, args.dest_root,
+                                 dry_run=not args.commit)
         print()
         print(mirrored.summary())
 

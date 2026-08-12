@@ -113,7 +113,6 @@ def assess_quality(text: str, page_count: int = 1) -> Quality:
                        {"chars": 0, "pages": page_count})
 
     letters = sum(1 for ch in stripped if ch.isalpha())
-    alnum = sum(1 for ch in stripped if ch.isalnum())
     alpha_ratio = float(letters) / total
     per_page = float(total) / page_count
 

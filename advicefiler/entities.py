@@ -251,7 +251,11 @@ def _read_names_at(text: str, start: int) -> Tuple[Optional[str], List[str], Opt
     parts = re.split(r"\s*(?:&|\band\b|,)\s*", raw)
     parsed = []  # type: List[List[str]]
     for part in parts:
-        tokens = [t for t in re.findall(r"[A-Za-z'\-]+", part)
+        # Unicode letters, not [A-Za-z]. An ASCII-only class turned Lars
+        # Sorensen into a client called "S" and Jose Garcia into "Garc" —
+        # silently, and into their own folders. Australian client lists are
+        # full of names this would have mangled.
+        tokens = [t for t in re.findall(r"[^\W\d_][\w'\-]*", part, re.UNICODE)
                   if t.lower() not in _NAME_TITLES]
         tokens = [t for t in tokens if t.lower() not in _NAME_STOPWORDS]
         tokens = [t for t in tokens if t[:1].isupper()]

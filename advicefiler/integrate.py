@@ -514,8 +514,17 @@ class CloudBackupDestination(LocalFolderDestination):
                 % (region, ", ".join(AU_REGIONS[:4])))
         self.region = region
 
-    def mirror(self, applied: ApplyResult, dry_run: bool = True) -> ApplyResult:
-        """Copy what the primary actually filed, then verify each copy."""
+    def mirror(self, applied: ApplyResult, primary_root: str,
+               dry_run: bool = True) -> ApplyResult:
+        """Copy what the primary actually filed, then verify each copy.
+
+        The mirror is computed against the primary's root, so the backup is the
+        same tree. An earlier version kept the last three path segments, which
+        happened to work for a three-level profile and silently dropped the
+        client folder for anything deeper — putting two clients' documents in
+        one backup folder.
+        """
+        primary_root = os.path.abspath(primary_root)
         result = ApplyResult("%s -> %s (%s)" % (self.name, self.root, self.region),
                              dry_run)
         state = self._load_state()
@@ -526,11 +535,15 @@ class CloudBackupDestination(LocalFolderDestination):
                 result.items.append(AppliedItem(item.doc_id, item.destination, "",
                                                 "skipped", "primary file missing"))
                 continue
-            relative = os.path.relpath(item.destination, os.path.dirname(self.root)) \
-                if False else os.path.basename(item.destination)
-            # Mirror the primary's tree, not just the filenames.
-            target = os.path.join(self.root, _relative_to_root(item.destination))
-            _ = relative
+            relative = os.path.relpath(os.path.abspath(item.destination),
+                                       primary_root)
+            if relative.startswith(os.pardir):
+                result.items.append(AppliedItem(
+                    item.doc_id, item.destination, "", "failed",
+                    "filed outside the primary root; refusing to guess where it "
+                    "belongs in the backup"))
+                continue
+            target = os.path.join(self.root, relative)
 
             if os.path.exists(target) and _same_content(item.destination, target):
                 result.items.append(AppliedItem(item.doc_id, item.destination,
@@ -634,9 +647,3 @@ def _same_content(a: str, b: str) -> bool:
     except (IOError, OSError):
         return False
 
-
-def _relative_to_root(path: str) -> str:
-    """The client/event portion of a filed path, for mirroring into a backup."""
-    parts = os.path.abspath(path).split(os.sep)
-    # Keep the last three segments at most: client / event / filename.
-    return os.path.join(*parts[-3:]) if len(parts) >= 3 else os.path.basename(path)

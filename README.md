@@ -24,7 +24,7 @@ No dependencies needed to run against the synthetic samples:
 python3 harness.py                      # ten sample documents, full pipeline
 python3 harness.py --display new        # with the teaching layer switched on
 python3 harness.py --calibrate          # sweep the confidence threshold
-python3 -m unittest discover -s tests   # 48 regression tests
+python3 -m unittest discover -s tests   # 51 regression tests
 ```
 
 To read real PDFs and Word files:
@@ -210,7 +210,7 @@ docs/
   INTEGRATION.md       connecting to a firm's existing filing system
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
 legacy/harness_v0.py   the keyword prototype, kept for before/after comparison
-tests/                 48 regression tests, one per bug v0 actually made
+tests/                 51 regression tests, one per bug v0 actually made
 ```
 
 ## Build sequence

@@ -427,3 +427,58 @@ class TestIntegration(SharedRun):
         issues = integrate.preflight(result, "/some/deep/root")
         self.assertTrue([i for i in issues
                          if i.level == "error" and "characters" in i.message])
+
+
+class TestRegressions(unittest.TestCase):
+    """Bugs found after the fact, each pinned so it cannot return."""
+
+    def test_non_ascii_client_names_survive(self):
+        """An ASCII-only character class produced a client called "S".
+
+        Lars Sorensen became "S", Jose Garcia became "Garc", and each got its own
+        client folder. Silent, and catastrophic for a client list that looks like
+        any Australian one.
+        """
+        for text, expected in (
+                ("Client: Lars Sørensen.", "Sørensen"),
+                ("Client: José García.", "García"),
+                ("Client: Siobhán Ó Braonáin.", "Braonáin"),
+                ("Prepared for: Mei Tran and Jordan Okafor.", "Okafor-Tran")):
+            self.assertEqual(entities.extract_client(text)[2], expected, text)
+
+    def test_backup_mirrors_the_whole_tree_not_the_last_three_segments(self):
+        """A depth heuristic dropped the client folder for deeper profiles.
+
+        Two clients' documents would have landed in one backup folder.
+        """
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        primary = os.path.join(tmp, "primary")
+        deep = os.path.join(primary, "Nguyen", "2024-03 Super", "sub", "doc.pdf")
+        os.makedirs(os.path.dirname(deep))
+        with open(deep, "w") as fh:
+            fh.write("content")
+
+        applied = integrate.ApplyResult("primary", False)
+        applied.items.append(integrate.AppliedItem("d1", "src", deep, "filed"))
+
+        backup = integrate.CloudBackupDestination(
+            os.path.join(tmp, "backup"), "ap-southeast-2")
+        mirrored = backup.mirror(applied, primary, dry_run=False)
+        self.assertEqual(mirrored.count("filed"), 1)
+        self.assertTrue(os.path.exists(os.path.join(
+            tmp, "backup", "Nguyen", "2024-03 Super", "sub", "doc.pdf")))
+
+    def test_backup_refuses_files_outside_the_primary_root(self):
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        stray = os.path.join(tmp, "elsewhere.pdf")
+        with open(stray, "w") as fh:
+            fh.write("x")
+        applied = integrate.ApplyResult("primary", False)
+        applied.items.append(integrate.AppliedItem("d1", "src", stray, "filed"))
+        backup = integrate.CloudBackupDestination(
+            os.path.join(tmp, "backup"), "ap-southeast-2")
+        mirrored = backup.mirror(applied, os.path.join(tmp, "primary"),
+                                 dry_run=False)
+        self.assertEqual(mirrored.count("failed"), 1)
