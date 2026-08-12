@@ -34,98 +34,87 @@ from .classify import KeywordClassifier
 from .clients import ClientRegister
 from .kb import KnowledgeBase
 from .profiles import FilingProfile, available
+from .webassets import CSS, RENDER_JS, THEME_HEAD, THEME_JS
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 PAGE = r"""<!doctype html>
-<meta charset="utf-8">
+<html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Advice Document Filing</title>
-<style>
-:root{--bg:#fbfbfa;--fg:#1c1c1a;--mute:#6b6b64;--line:#e2e2dd;--card:#fff;
---ok:#2f6f4f;--warn:#8a5a12;--bad:#a02c2c;--accent:#2b4c7e;--chip:#f1f1ee}
-@media(prefers-color-scheme:dark){:root{--bg:#16161a;--fg:#e8e8e4;--mute:#9a9a94;
---line:#2e2e34;--card:#1e1e23;--ok:#7fc79b;--warn:#e0b062;--bad:#e88b8b;
---accent:#8fb2e8;--chip:#26262c}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-header{padding:18px 26px;border-bottom:1px solid var(--line);display:flex;
-gap:18px;align-items:center;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);z-index:5}
-h1{font-size:17px;margin:0;font-weight:600;letter-spacing:-.01em}
-.sub{color:var(--mute);font-size:13px}
-main{padding:22px 26px;max-width:1180px}
-button{font:inherit;padding:7px 14px;border-radius:7px;border:1px solid var(--line);
-background:var(--card);color:var(--fg);cursor:pointer}
-button:hover{border-color:var(--accent)}
-button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-button.danger{border-color:var(--bad);color:var(--bad)}
-button:disabled{opacity:.45;cursor:not-allowed}
-input,select{font:inherit;padding:6px 9px;border-radius:7px;border:1px solid var(--line);
-background:var(--card);color:var(--fg);min-width:220px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.stats{display:flex;gap:24px;flex-wrap:wrap;margin:18px 0 8px}
-.stat b{display:block;font-size:24px;font-weight:600;letter-spacing:-.02em}
-.stat span{color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.event{border:1px solid var(--line);border-radius:11px;background:var(--card);
-margin:14px 0;overflow:hidden}
-.event>h3{margin:0;padding:13px 16px;font-size:14px;font-weight:600;
-border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline}
-.event>h3 small{color:var(--mute);font-weight:400}
-.doc{padding:12px 16px;border-bottom:1px solid var(--line);display:grid;
-grid-template-columns:1fr auto;gap:12px;align-items:start}
-.doc:last-child{border-bottom:0}
-.doc.rev{background:color-mix(in srgb,var(--bad) 6%,transparent)}
-.name{font-weight:550}
-.meta{color:var(--mute);font-size:13px;margin-top:3px}
-.why{font-size:13px;margin-top:5px;color:var(--mute)}
-.chip{display:inline-block;padding:1px 8px;border-radius:20px;background:var(--chip);
-font-size:11.5px;color:var(--mute);margin-right:5px;letter-spacing:.02em}
-.flag{font-size:12.5px;margin-top:6px;padding:6px 9px;border-radius:7px;
-border-left:3px solid var(--warn);background:color-mix(in srgb,var(--warn) 8%,transparent)}
-.flag.high{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,transparent)}
-.flag b{font-weight:600}
-.dest{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
-color:var(--accent);margin-top:5px;word-break:break-all}
-.acts{display:flex;flex-direction:column;gap:5px;min-width:112px}
-.acts button{padding:5px 10px;font-size:13px}
-.on-approve{background:var(--ok);color:#fff;border-color:var(--ok)}
-.on-reject{background:var(--bad);color:#fff;border-color:var(--bad)}
-.bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);
-padding:13px 26px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.msg{padding:11px 14px;border-radius:8px;margin:12px 0;font-size:13.5px;
-border:1px solid var(--line);background:var(--card);white-space:pre-wrap}
-.msg.err{border-color:var(--bad);color:var(--bad)}
-.hint{color:var(--mute);font-size:12.5px}
-code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:var(--chip);
-padding:1px 5px;border-radius:4px}
+__THEME_HEAD__
+<style>__CSS__
+/* app-specific ------------------------------------------------------------ */
+.setup{border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  padding:16px;margin:22px 0 4px;box-shadow:var(--shadow)}
+.setup h2{font-size:12px;font-weight:600;color:var(--faint);margin:0 0 12px;
+  text-transform:uppercase;letter-spacing:.08em}
+.field{display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center;
+  margin-bottom:9px}
+.field label{font-size:13px;color:var(--mute)}
+.field input,.field select{width:100%}
+.field .sub{grid-column:2;font-size:12px;color:var(--faint);margin-top:-3px}
+.go{font:inherit;font-size:13.5px;font-weight:500;padding:8px 18px;border-radius:7px;
+  border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer}
+.go:disabled{opacity:.5;cursor:not-allowed}
+.setup .actions{display:flex;gap:10px;align-items:center;margin-top:14px}
+.empty{text-align:center;color:var(--faint);padding:60px 20px;font-size:14px}
+.groupacts{margin-left:auto;display:flex;gap:6px}
+.groupacts button{font:inherit;font-size:12px;padding:3px 10px;border-radius:6px;
+  border:1px solid var(--line);background:transparent;color:var(--mute);cursor:pointer}
+.groupacts button:hover{color:var(--fg);border-color:var(--faint)}
+.bar{position:sticky;bottom:0;background:var(--panel);border-top:1px solid var(--line);
+  padding:12px 0;margin-top:26px}
+.bar .wrap{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.count{font-size:13px;color:var(--mute)}
+.count b{color:var(--fg);font-weight:600}
 </style>
-<header>
-  <h1>Advice Document Filing</h1>
-  <span class="sub" id="ctx">local · nothing leaves this machine</span>
-  <span style="flex:1"></span>
-  <div class="row">
-    <input id="input" placeholder="folder of documents" size="34">
-    <select id="profile"></select>
-    <button class="primary" id="run">Read documents</button>
+<div class="top"><div class="wrap">
+  <p class="brand">Advice Document Filing</p>
+  <span class="hint" id="ctx">local · nothing leaves this machine</span>
+  <span class="grow"></span>
+  <button class="ghost" id="theme" onclick="cycleTheme()">Auto</button>
+</div></div>
+
+<div class="wrap">
+  <div class="setup" id="setup">
+    <h2>Documents</h2>
+    <div class="field"><label for="input">Folder</label>
+      <input id="input" placeholder="/Users/you/Documents/smith-family" spellcheck="false"></div>
+    <div class="field"><span></span><span class="sub" id="inputhint">
+      Leave empty to use the ten built-in sample documents.</span></div>
+    <div class="field"><label for="profile">Filing scheme</label>
+      <select id="profile"></select></div>
+    <div class="field"><span></span><span class="sub" id="pdesc"></span></div>
+    <div class="actions">
+      <button class="go" id="run">Read documents</button>
+      <span class="hint">Nothing is written until you choose to file.</span>
+    </div>
   </div>
-</header>
-<main>
+
   <div id="msg"></div>
-  <div class="stats" id="stats"></div>
-  <div id="body"></div>
-</main>
-<div class="bar" id="bar" style="display:none">
-  <button id="approveAll">Approve everything filable</button>
-  <span class="hint">reviewed items stay rejected</span>
-  <span style="flex:1"></span>
-  <input id="dest" placeholder="destination folder" size="30">
-  <button id="dry">Dry run</button>
-  <button class="danger" id="commit">File them</button>
+  <div class="summary" id="summary" style="display:none"></div>
+  <div id="body"><div class="empty" id="empty">
+    Choose a folder and read it, or press <b>Read documents</b> for the samples.
+  </div></div>
 </div>
+
+<div class="bar" id="bar" style="display:none"><div class="wrap">
+  <span class="count"><b id="napprove">0</b> approved · <b id="nreject">0</b> rejected
+    · <b id="npending">0</b> undecided</span>
+  <span class="grow"></span>
+  <input id="dest" placeholder="destination folder" spellcheck="false">
+  <button class="ghost" id="dry">Dry run</button>
+  <button class="go" id="commit">File them</button>
+</div></div>
+
 <script>
+__THEME_JS__
+__RENDER_JS__
+
 let DATA=null, DEC={};
 const $=s=>document.querySelector(s);
-const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+paintThemeButton();
 
 async function api(path,body){
   const r=await fetch(path,{method:body?'POST':'GET',
@@ -134,95 +123,80 @@ async function api(path,body){
   if(!r.ok) throw new Error(j.error||'request failed');
   return j;
 }
-function say(t,bad){ $('#msg').innerHTML = t? `<div class="msg ${bad?'err':''}">${esc(t)}</div>`:''; }
+function say(t,bad){ $('#msg').innerHTML = t?`<div class="msg ${bad?'err':''}">${esc(t)}</div>`:''; }
 
+let PROFILES={};
 api('/api/config').then(c=>{
-  $('#profile').innerHTML=c.profiles.map(p=>`<option value="${p}" ${p==c.profile?'selected':''}>${p}</option>`).join('');
+  PROFILES=c.descriptions||{};
+  $('#profile').innerHTML=c.profiles.map(p=>
+    `<option value="${p}" ${p===c.profile?'selected':''}>${esc(p)}</option>`).join('');
   $('#input').value=c.input||''; $('#dest').value=c.dest||'';
-  if(c.demo){ say('Demo mode: ten synthetic documents, including a deliberately illegible scan and an authority to proceed with no advice record behind it. Nothing here is a real client.'); run(); }
+  describe();
+  if(c.demo) run();
 });
+function describe(){ $('#pdesc').textContent=PROFILES[$('#profile').value]||''; }
+$('#profile').onchange=()=>{ describe(); if(DATA) run(); };
 
 async function run(){
-  say('reading…'); $('#run').disabled=true;
+  say(''); $('#run').disabled=true; $('#run').textContent='Reading…';
   try{
     DATA=await api('/api/run',{input:$('#input').value,profile:$('#profile').value});
     DEC={}; DATA.documents.forEach(d=>DEC[d.doc_id]=d.needs_review?'reject':'pending');
-    render(); say('');
-  }catch(e){ say(e.message,true); DATA=null; $('#body').innerHTML=''; $('#stats').innerHTML=''; }
-  $('#run').disabled=false;
+    render();
+  }catch(e){
+    say(e.message,true); DATA=null; $('#body').innerHTML=''; 
+    $('#summary').style.display='none'; $('#bar').style.display='none';
+  }
+  $('#run').disabled=false; $('#run').textContent='Read documents';
 }
 $('#run').onclick=run;
 
-function stat(n,l){ return `<div class="stat"><b>${n}</b><span>${l}</span></div>`; }
-
 function render(){
-  const d=DATA, b=d.batch;
-  $('#ctx').textContent=`${d.filing_profile} · knowledge base v${d.knowledge_base_version} · nothing leaves this machine`;
-  $('#stats').innerHTML=stat(b.documents,'documents')+stat(d.events.length,'advice events')
-    +stat(b.auto_filed,'placed')+stat(b.needs_review,'need review')
-    +stat(d.documents.reduce((n,x)=>n+x.flags.filter(f=>f.severity=='high').length,0),'high flags');
-
-  const byEvent={}; const loose=[];
-  d.documents.forEach(x=> x.event_id ? (byEvent[x.event_id]=byEvent[x.event_id]||[]).push(x) : loose.push(x));
-
-  let html='';
-  d.events.forEach(ev=>{
-    html+=`<div class="event"><h3>${esc(ev.client)} — ${esc(ev.subject)}
-      <small>${esc(ev.date||'undated')} · ${esc(ev.record_label)}${ev.sub_kind?' · '+esc(ev.sub_kind):''}</small></h3>`;
-    (byEvent[ev.event_id]||[]).forEach(x=>html+=doc(x));
-    html+=`</div>`;
+  const d=DATA;
+  $('#ctx').textContent=`${d.filing_profile} · knowledge base v${d.knowledge_base_version}`;
+  $('#summary').innerHTML=summaryHtml(d); $('#summary').style.display='flex';
+  $('#body').innerHTML=groupsHtml(d,true);
+  // Judging a whole advice event at once is the unit that makes sense: is this
+  // the March super advice and everything behind it, yes or no.
+  document.querySelectorAll('.group').forEach(g=>{
+    const ids=[...g.querySelectorAll('.row')].map(r=>r.id.slice(4));
+    const bar=document.createElement('span'); bar.className='groupacts';
+    bar.innerHTML=`<button>Approve all</button>`;
+    bar.firstChild.onclick=()=>{ids.forEach(i=>{
+      const doc=DATA.documents.find(x=>x.doc_id===i);
+      if(doc && !doc.needs_review) DEC[i]='approve';}); paint();};
+    g.querySelector('header').appendChild(bar);
   });
-  if(loose.length){
-    html+=`<div class="event"><h3>Not part of an advice event <small>licensee material, client-level documents, and anything that could not be placed</small></h3>`;
-    loose.forEach(x=>html+=doc(x)); html+=`</div>`;
-  }
-  $('#body').innerHTML=html; $('#bar').style.display='flex'; paint();
+  $('#bar').style.display='block'; paint();
 }
 
-function doc(x){
-  const dest=x.destination||{};
-  return `<div class="doc ${x.needs_review?'rev':''}" id="d-${x.doc_id}">
-    <div>
-      <div class="name">${esc(x.source_name)}</div>
-      <div class="meta"><span class="chip">${esc(x.type_label)}</span>
-        <span class="chip">confidence ${x.confidence.toFixed(2)}</span>
-        ${x.client?`<span class="chip">${esc(x.client)}</span>`:''}
-        ${x.date?`<span class="chip">${esc(x.date)}</span>`:''}</div>
-      ${x.attachment_reason?`<div class="why">${esc(x.attachment_reason)}</div>`:''}
-      ${x.flags.map(f=>`<div class="flag ${f.severity}"><b>${esc(f.id)}</b>${f.blocks_filing?' · blocks filing':' · files anyway'}<br>${esc(f.message)}</div>`).join('')}
-      ${dest.path?`<div class="dest">${esc(dest.path)}</div>`:''}
-    </div>
-    <div class="acts">
-      <button onclick="setDec('${x.doc_id}','approve')" id="a-${x.doc_id}">Approve</button>
-      <button onclick="setDec('${x.doc_id}','reject')" id="r-${x.doc_id}">Reject</button>
-    </div></div>`;
-}
-
-function setDec(id,v){ DEC[id]=DEC[id]===v?'pending':v; paint(); }
+function decide(id,v){ DEC[id]=DEC[id]===v?'pending':v; paint(); }
 function paint(){
+  let a=0,r=0,p=0;
   DATA.documents.forEach(x=>{
-    const v=DEC[x.doc_id];
-    const a=document.getElementById('a-'+x.doc_id), r=document.getElementById('r-'+x.doc_id);
-    if(!a) return;
-    a.className=v==='approve'?'on-approve':''; r.className=v==='reject'?'on-reject':'';
+    const v=DEC[x.doc_id]; v==='approve'?a++:v==='reject'?r++:p++;
+    const y=document.getElementById('y-'+x.doc_id), n=document.getElementById('n-'+x.doc_id);
+    if(y){ y.className=v==='approve'?'yes':''; n.className=v==='reject'?'no':''; }
   });
-  const n=Object.values(DEC).filter(v=>v==='approve').length;
-  $('#dry').textContent=`Dry run (${n})`; $('#commit').textContent=`File them (${n})`;
-  $('#commit').disabled=$('#dry').disabled=(n===0);
+  $('#napprove').textContent=a; $('#nreject').textContent=r; $('#npending').textContent=p;
+  $('#dry').disabled=$('#commit').disabled=(a===0);
+  $('#commit').textContent=a?`File ${a}`:'File them';
 }
-$('#approveAll').onclick=()=>{ DATA.documents.forEach(x=>{ if(!x.needs_review) DEC[x.doc_id]='approve'; }); paint(); };
 
 async function apply(commit){
-  say(commit?'filing…':'rehearsing…');
+  say(commit?'Filing…':'Rehearsing…');
   try{
-    const r=await api('/api/apply',{input:$('#input').value,profile:$('#profile').value,
+    const res=await api('/api/apply',{input:$('#input').value,profile:$('#profile').value,
       dest:$('#dest').value,commit:commit,decisions:DEC});
-    say(r.summary+'\n\n'+r.detail.join('\n'));
+    say(res.summary+(res.detail.length?'\n\n'+res.detail.join('\n'):''));
   }catch(e){ say(e.message,true); }
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 $('#dry').onclick=()=>apply(false);
-$('#commit').onclick=()=>{ if(confirm('Copy the approved documents into the destination folder?')) apply(true); };
+$('#commit').onclick=()=>{
+  if(confirm('Copy the approved documents into the destination folder?')) apply(true); };
 </script>
+</html>
 """
 
 
@@ -279,10 +253,18 @@ def make_handler(state: State):
 
         def do_GET(self):
             if self.path in ("/", "/index.html"):
-                return self._send(200, PAGE, "text/html")
+                page = (PAGE.replace("__THEME_HEAD__", THEME_HEAD)
+                            .replace("__CSS__", CSS)
+                            .replace("__THEME_JS__", THEME_JS)
+                            .replace("__RENDER_JS__", RENDER_JS))
+                return self._send(200, page, "text/html")
             if self.path == "/api/config":
+                descriptions = {}
+                for name in available():
+                    descriptions[name] = FilingProfile.load(name).description
                 return self._send(200, json.dumps({
                     "profiles": available(), "profile": "nested-default",
+                    "descriptions": descriptions,
                     "input": state.input_dir or "", "dest": state.dest or "",
                     "demo": state.demo}))
             return self._send(404, json.dumps({"error": "not found"}))
