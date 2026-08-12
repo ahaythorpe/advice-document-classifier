@@ -186,22 +186,51 @@ def file_digest(path: str) -> str:
     return digest.hexdigest()
 
 
-def network_modules_used(package_dir: Optional[str] = None) -> List[str]:
-    """Which modules import networking. Should be empty, and is tested.
+# Sending data OUT is the thing that matters. Binding a loopback listener is not
+# the same act and must not be conflated with it — claiming "no networking" while
+# shipping a local server would be a claim a licensee could catch us on, and
+# would train everyone to ignore the check.
+_EGRESS = re.compile(
+    r"^\s*(?:import|from)\s+(socket|urllib|requests|httpx|ftplib|smtplib|"
+    r"telnetlib|xmlrpc|aiohttp|websockets?|http\.client|boto3|google\.cloud)\b",
+    re.M)
 
-    Phase 1 makes no network calls at all. That is a property worth being able
-    to demonstrate to a licensee rather than assert, so it is checked rather
-    than promised.
-    """
+# Accepting a connection on 127.0.0.1. Inbound, local, and not a way for a
+# client document to leave the machine.
+_LISTEN = re.compile(
+    r"^\s*(?:import|from)\s+(http\.server|socketserver|BaseHTTPServer|wsgiref)\b",
+    re.M)
+
+
+def _scan(pattern, package_dir: Optional[str] = None) -> List[str]:
     package_dir = package_dir or os.path.dirname(os.path.abspath(__file__))
-    offenders = []
-    pattern = re.compile(
-        r"^\s*(?:import|from)\s+(socket|http|urllib|requests|httpx|ftplib|"
-        r"smtplib|telnetlib|xmlrpc|aiohttp|websocket)\b", re.M)
+    found = []
     for name in sorted(os.listdir(package_dir)):
         if not name.endswith(".py"):
             continue
         with open(os.path.join(package_dir, name), "r") as fh:
             if pattern.search(fh.read()):
-                offenders.append(name)
-    return offenders
+                found.append(name)
+    return found
+
+
+def network_modules_used(package_dir: Optional[str] = None) -> List[str]:
+    """Modules that could send data off this machine. Should be empty.
+
+    This is the claim worth making and worth testing: no client text, no
+    filename, no client name can leave the machine, because nothing here can
+    make an outbound connection. A licensee can be shown this rather than told
+    it.
+
+    It stops being true at build step 4, when an LLM classifier sends document
+    text to a model provider. That is a decision requiring the licensee's
+    agreement, a data processing agreement and a documented region — and this
+    check is what makes the change visible when it happens, instead of arriving
+    quietly inside a dependency.
+    """
+    return _scan(_EGRESS, package_dir)
+
+
+def listening_modules(package_dir: Optional[str] = None) -> List[str]:
+    """Modules that accept a local connection — the review UI, and only it."""
+    return _scan(_LISTEN, package_dir)

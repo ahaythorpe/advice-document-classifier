@@ -33,15 +33,24 @@ them:
 
 ## Controls, and what each is worth
 
-**No network egress.** `advicefiler/` imports nothing that opens a socket, and
-`security.network_modules_used()` checks it. There is a test asserting it comes
-back empty. This is the control that matters most today, because it means client
-text cannot leave the machine by accident — and it is stated as a demonstrable
-property rather than a promise, because a licensee will ask.
+**No network egress.** Nothing in `advicefiler/` can make an outbound
+connection, and `security.network_modules_used()` checks it — with a test
+asserting it comes back empty. This is the control that matters most today: no
+client text, no filename, no client name can leave the machine, and a licensee
+can be shown that rather than told it.
+
+Note what is *not* claimed. The review UI binds a listener on `127.0.0.1`, and
+`security.listening_modules()` reports it separately. Accepting a local
+connection is not a way for a document to leave, and conflating the two would
+make this a claim a licensee could catch us on — which would teach everyone to
+ignore the check. There is a test asserting `ui.py` is the only module that
+listens, and that it never binds `0.0.0.0`.
 
 This changes at build step 4. An LLM classifier sends document text to a model
 provider, and that is a decision needing the licensee's agreement, a data
-processing agreement, and a documented region — not a library upgrade.
+processing agreement and a documented region — not a library upgrade. The check
+is what makes that change visible when it happens, rather than arriving quietly
+inside a dependency.
 
 **Redaction.** `--redact` replaces client names, filenames and paths with stable,
 non-reversible pseudonyms while keeping types, confidences, flags, dates and

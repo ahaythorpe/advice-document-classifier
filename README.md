@@ -36,7 +36,7 @@ The same pipeline on the command line:
 python3 harness.py                      # ten sample documents, full pipeline
 python3 harness.py --display new        # with the teaching layer switched on
 python3 harness.py --calibrate          # sweep the confidence threshold
-python3 -m unittest discover -s tests   # 72 regression tests
+python3 -m unittest discover -s tests   # 73 regression tests
 ```
 
 To read real PDFs and Word files:
@@ -295,7 +295,7 @@ docs/
   SECURITY.md          what is protected, how, and what is deliberately not done
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
 legacy/harness_v0.py   the keyword prototype, kept for before/after comparison
-tests/                 72 regression tests, one per bug v0 actually made
+tests/                 73 regression tests, one per bug v0 actually made
 ```
 
 ## Build sequence

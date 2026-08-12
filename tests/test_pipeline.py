@@ -553,9 +553,20 @@ class TestClientMatching(unittest.TestCase):
 
 
 class TestSecurity(unittest.TestCase):
-    def test_the_package_makes_no_network_calls(self):
-        """A property worth demonstrating to a licensee, not asserting."""
+    def test_nothing_can_send_data_off_this_machine(self):
+        """The claim worth making: no egress, anywhere in the package.
+
+        Not "no networking" — the review UI binds a loopback listener, and
+        conflating the two would make this a claim a licensee could catch us on.
+        Accepting a local connection is not a way for a client document to leave.
+        """
         self.assertEqual(security.network_modules_used(), [])
+
+    def test_only_the_review_ui_listens_and_only_on_loopback(self):
+        self.assertEqual(security.listening_modules(), ["ui.py"])
+        source = open(os.path.join(ROOT, "advicefiler", "ui.py")).read()
+        self.assertIn('"127.0.0.1"', source)
+        self.assertNotIn('"0.0.0.0"', source)
 
     def test_redaction_removes_names_but_keeps_the_domain_vocabulary(self):
         kb = KnowledgeBase.load()
