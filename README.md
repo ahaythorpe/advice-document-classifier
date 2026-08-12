@@ -206,6 +206,7 @@ advicefiler/
   report.py            console output, both display modes
 profiles/              four filing schemes; copy one to match a firm
 docs/
+  ROADMAP.md           the build plan: what gates each step, where the risk is
   ARCHITECTURE.md      how the pieces fit and why
   INTEGRATION.md       connecting to a firm's existing filing system
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
