@@ -17,7 +17,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from advicefiler import entities, evaluate, extract, flags, pipeline  # noqa: E402
+from advicefiler import (entities, evaluate, extract, flags,  # noqa: E402
+                         integrate, pipeline)
 from advicefiler.classify import KeywordClassifier  # noqa: E402
 from advicefiler.kb import KnowledgeBase  # noqa: E402
 
@@ -309,3 +310,120 @@ class TestKnowledgeBaseIsTheSourceOfTruth(SharedRun):
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+
+
+class TestIntegration(SharedRun):
+    """The connection layer: profiles, manifest, approvals, filing."""
+
+    def _real_batch(self, tmp):
+        """A tiny batch with files that actually exist on disk."""
+        import shutil
+        os.makedirs(tmp)
+        soa = os.path.join(tmp, "soa.txt")
+        with open(soa, "w") as fh:
+            fh.write("STATEMENT OF ADVICE\nPrepared for: Mei Tran\n"
+                     "Scope of advice: superannuation consolidation.\n"
+                     "Basis for advice and reasoning. Our recommendation follows.\n"
+                     "Date of advice: 09/05/2024\n")
+        docs, failures = extract.extract_directory(tmp)
+        _ = shutil
+        return pipeline.run(self.kb, docs, extraction_failures=failures)
+
+    def test_profiles_change_the_path_not_the_classification(self):
+        from advicefiler.profiles import FilingProfile
+        paths = {}
+        for name in ("nested-default", "category-flat", "sharepoint-safe"):
+            result = pipeline.run(self.kb, self.documents,
+                                  profile=FilingProfile.load(name))
+            types = {r.name: r.doc_type for r in result.records}
+            self.assertEqual(types, {r.name: r.doc_type for r in self.result.records})
+            paths[name] = sorted(p.path for p in result.plan.files)
+        self.assertNotEqual(paths["nested-default"], paths["category-flat"])
+        self.assertNotEqual(paths["nested-default"], paths["sharepoint-safe"])
+
+    def test_sharepoint_profile_is_ascii_only(self):
+        from advicefiler.profiles import FilingProfile
+        result = pipeline.run(self.kb, self.documents,
+                              profile=FilingProfile.load("sharepoint-safe"))
+        for planned in result.plan.files:
+            planned.path.encode("ascii")   # raises if any non-ASCII survived
+
+    def test_events_survive_a_profile_with_no_event_folder(self):
+        """category-flat has no event folder; the grouping must still exist."""
+        from advicefiler.profiles import FilingProfile
+        result = pipeline.run(self.kb, self.documents,
+                              profile=FilingProfile.load("category-flat"))
+        data = integrate.manifest(result)
+        self.assertEqual(len(data["events"]), 2)
+        anchored = [d for d in data["documents"] if d["event_id"]]
+        self.assertGreaterEqual(len(anchored), 6)
+
+    def test_manifest_is_stable_and_keyed_by_content(self):
+        data = integrate.manifest(self.result)
+        self.assertEqual(data["schema"], integrate.MANIFEST_SCHEMA)
+        ids = [d["doc_id"] for d in data["documents"]]
+        self.assertEqual(len(ids), len(set(ids)))
+        again = integrate.manifest(pipeline.run(self.kb, load_samples()))
+        self.assertEqual(ids, [d["doc_id"] for d in again["documents"]])
+
+    def test_review_documents_default_to_reject_in_approvals(self):
+        import tempfile
+        path = os.path.join(tempfile.mkdtemp(), "approvals.json")
+        integrate.write_approvals(self.result, path)
+        items = integrate.load_approvals(path)
+        for record in self.result.records:
+            expected = integrate.REJECT if record.needs_review else integrate.PENDING
+            self.assertEqual(items[record.doc_id]["decision"], expected, record.name)
+
+    def test_nothing_is_filed_without_approval(self):
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        result = self._real_batch(os.path.join(tmp, "batch"))
+        dest = integrate.LocalFolderDestination(os.path.join(tmp, "dest"))
+        applied = dest.apply(result.plan, {}, dry_run=False)
+        self.assertEqual(applied.count("filed"), 0)
+        self.assertFalse(os.path.exists(os.path.join(tmp, "dest", "Tran")))
+
+    def test_filing_is_idempotent(self):
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        result = self._real_batch(os.path.join(tmp, "batch"))
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        dest = integrate.LocalFolderDestination(os.path.join(tmp, "dest"))
+        first = dest.apply(result.plan, approvals, dry_run=False)
+        second = dest.apply(result.plan, approvals, dry_run=False)
+        self.assertEqual(first.count("filed"), 1)
+        self.assertEqual(second.count("filed"), 0)
+        self.assertEqual(second.count("already-filed"), 1)
+
+    def test_dry_run_writes_nothing(self):
+        import tempfile
+        tmp = tempfile.mkdtemp()
+        result = self._real_batch(os.path.join(tmp, "batch"))
+        approvals = {r.doc_id: {"decision": integrate.APPROVE}
+                     for r in result.records}
+        dest_root = os.path.join(tmp, "dest")
+        applied = integrate.LocalFolderDestination(dest_root).apply(
+            result.plan, approvals, dry_run=True)
+        self.assertEqual(applied.count("filed"), 1)
+        self.assertFalse(os.path.exists(dest_root))
+
+    def test_cloud_backup_demands_an_australian_region(self):
+        import tempfile
+        root = tempfile.mkdtemp()
+        with self.assertRaises(integrate.IntegrationError):
+            integrate.CloudBackupDestination(root, "")
+        with self.assertRaises(integrate.IntegrationError):
+            integrate.CloudBackupDestination(root, "us-east-1")
+        backup = integrate.CloudBackupDestination(root, "ap-southeast-2")
+        self.assertTrue(backup.is_cloud)
+
+    def test_preflight_catches_over_long_paths(self):
+        from advicefiler.profiles import FilingProfile
+        profile = FilingProfile.load("nested-default")
+        profile.max_path_chars = 20
+        result = pipeline.run(self.kb, self.documents, profile=profile)
+        issues = integrate.preflight(result, "/some/deep/root")
+        self.assertTrue([i for i in issues
+                         if i.level == "error" and "characters" in i.message])

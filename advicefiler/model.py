@@ -65,6 +65,11 @@ class Record(object):
                  classification: Classification) -> None:
         self.document = document
         self.classification = classification
+        # Stable identity for integration: lets a destination recognise a
+        # document it has already filed, so a re-run is idempotent rather than
+        # a second copy. Content-based, so a renamed file is still the same
+        # document and a re-scanned one is not.
+        self.doc_id = document.content_id
 
         # Identity
         self.client_raw = None  # type: Optional[str]

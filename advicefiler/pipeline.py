@@ -17,6 +17,7 @@ from .classify import Classifier, KeywordClassifier
 from .extract import ExtractedDocument
 from .kb import KnowledgeBase
 from .model import Record
+from .profiles import FilingProfile
 
 
 class PipelineResult(object):
@@ -26,6 +27,7 @@ class PipelineResult(object):
         self.records = []  # type: List[Record]
         self.grouping = None  # type: Optional[events.GroupingResult]
         self.plan = None  # type: Optional[storage.FolderPlan]
+        self.profile = None  # type: Optional[FilingProfile]
         self.batch_client = None  # type: Optional[str]
         self.extraction_failures = []  # type: List[Dict[str, str]]
         self.started = None  # type: Optional[datetime.datetime]
@@ -97,7 +99,8 @@ def _resolve_clients(kb: KnowledgeBase, records: List[Record]) -> Optional[str]:
 def run(kb: KnowledgeBase, documents: List[ExtractedDocument],
         classifier: Optional[Classifier] = None,
         extraction_failures: Optional[List[Dict[str, str]]] = None,
-        now: Optional[datetime.datetime] = None) -> PipelineResult:
+        now: Optional[datetime.datetime] = None,
+        profile: Optional[FilingProfile] = None) -> PipelineResult:
     classifier = classifier or KeywordClassifier(kb)
     result = PipelineResult(kb, classifier.name)
     result.extraction_failures = extraction_failures or []
@@ -116,6 +119,7 @@ def run(kb: KnowledgeBase, documents: List[ExtractedDocument],
 
     # 4. file or flag
     flags.run_all(kb, result.records, result.grouping, result.batch_client)
+    result.profile = profile or FilingProfile.load()
     result.plan = storage.build_plan(kb, result.records, result.grouping,
-                                     result.batch_client)
+                                     result.batch_client, result.profile)
     return result

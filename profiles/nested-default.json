@@ -1,0 +1,45 @@
+{
+  "id": "nested-default",
+  "name": "Nested (client outer / advice event inner)",
+  "description": "The scheme SYSTEM.md section 5 recommends. Best accuracy, because a document is placed by two axes that must agree. Use this unless the firm's existing system dictates otherwise.",
+  "charset": "unicode",
+  "max_path_chars": 260,
+  "max_name_chars": 120,
+  "extra_illegal_chars": "",
+  "folders": {
+    "client": "{client}",
+    "event": "{event_date:%Y-%m} — {subject} [{record_label}{sub_kind_suffix}]",
+    "category": "{category}",
+    "client_level": "_Client-level documents",
+    "licensee": "_Licensee documents",
+    "review": "_Needs review"
+  },
+  "layout": {
+    "event_document": [
+      "client",
+      "event"
+    ],
+    "client_level_document": [
+      "client",
+      "client_level"
+    ],
+    "licensee_document": [
+      "licensee"
+    ],
+    "review_with_client": [
+      "client",
+      "review"
+    ],
+    "review_without_client": [
+      "review"
+    ]
+  },
+  "filename": {
+    "client_document": "{date:%Y-%m-%d} - {client} - {type_label}",
+    "licensee_document": "{date:%Y-%m-%d} - {type_label}",
+    "undated": "undated",
+    "keep_original": false
+  },
+  "type_labels": {},
+  "categories": {}
+}

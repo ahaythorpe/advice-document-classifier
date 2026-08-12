@@ -1,0 +1,65 @@
+{
+  "id": "category-flat",
+  "name": "Client folder with document categories",
+  "description": "One folder per client, subdivided by document category rather than by advice event. This is how most practice-management systems (Xplan, AdviserLogic, Practifi, Virtual Cabinet) organise a client file, so it is the profile to start from when filing into one. Advice events are still computed and still drive the flags and the event links — they are recorded in the manifest rather than in the folder path, so nothing is lost, it is just not expressed as folders.",
+  "charset": "unicode",
+  "max_path_chars": 260,
+  "max_name_chars": 120,
+  "extra_illegal_chars": "",
+  "folders": {
+    "client": "{client}",
+    "event": "{category}",
+    "category": "{category}",
+    "client_level": "Client Correspondence",
+    "licensee": "_Licensee",
+    "review": "_Needs review"
+  },
+  "layout": {
+    "event_document": [
+      "client",
+      "category"
+    ],
+    "client_level_document": [
+      "client",
+      "client_level"
+    ],
+    "licensee_document": [
+      "licensee"
+    ],
+    "review_with_client": [
+      "client",
+      "review"
+    ],
+    "review_without_client": [
+      "review"
+    ]
+  },
+  "filename": {
+    "client_document": "{date:%Y-%m-%d} {type_label} - {subject}",
+    "licensee_document": "{date:%Y-%m-%d} {type_label}",
+    "undated": "undated",
+    "keep_original": false
+  },
+  "type_labels": {
+    "soa": "SOA",
+    "car": "CAR",
+    "roa": "ROA",
+    "authority_to_proceed": "Authority to Proceed",
+    "fsg": "FSG",
+    "pds": "PDS",
+    "fact_find": "Fact Find",
+    "risk_profile": "Risk Profile",
+    "fee_disclosure_statement": "Fee Consent"
+  },
+  "categories": {
+    "soa": "Advice Documents",
+    "car": "Advice Documents",
+    "roa": "Advice Documents",
+    "authority_to_proceed": "Advice Documents",
+    "fact_find": "Client Data",
+    "risk_profile": "Client Data",
+    "fsg": "Compliance",
+    "pds": "Product Information",
+    "fee_disclosure_statement": "Fees & Consents"
+  }
+}

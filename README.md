@@ -24,7 +24,7 @@ No dependencies needed to run against the synthetic samples:
 python3 harness.py                      # ten sample documents, full pipeline
 python3 harness.py --display new        # with the teaching layer switched on
 python3 harness.py --calibrate          # sweep the confidence threshold
-python3 -m unittest discover -s tests   # 38 regression tests
+python3 -m unittest discover -s tests   # 48 regression tests
 ```
 
 To read real PDFs and Word files:
@@ -109,6 +109,51 @@ Client Advice Record. `car` already exists in the knowledge base sharing
 that role, never by the literal id. There is a test that adds a CAR and asserts it
 anchors an advice event with no code change.
 
+## Fitting into a firm's existing filing system
+
+No firm will adopt this tool's folder scheme — they already run Xplan,
+AdviserLogic, Practifi, Virtual Cabinet, FYI, SharePoint or a folder convention
+nobody is allowed to change. So the destination is an adapter and the layout is
+configuration. Three ways in, in increasing order of trust required:
+
+```bash
+# A. take the manifest — no write access at all
+python3 harness.py --input input/smith --export-manifest out/manifest.json \
+                                       --export-csv out/plan.csv
+
+# B. take a reviewable script, run it through a channel IT already trusts
+python3 harness.py --input input/smith --export-script out/file-them.ps1 \
+    --script-shell powershell --dest-root "D:\\Clients"
+
+# C. let the tool file: propose, a human approves, then commit
+python3 harness.py --input input/smith --emit-approvals out/approvals.json
+python3 harness.py --input input/smith --approved out/approvals.json \
+    --dest-root "/Volumes/Advice/Clients" --commit \
+    --backup-root ~/OneDrive/AdviceBackup --backup-region ap-southeast-2
+```
+
+**Desktop primary, cloud backup.** The working copy lives where advisers work
+and the practice-management system indexes. Cloud is a second copy, mirrored
+after the primary succeeds and hash-verified after writing — a backup nobody has
+verified is a belief, not a backup. OneDrive, SharePoint, Teams, Dropbox and
+Google Drive all appear as ordinary sync folders on an adviser's machine, so the
+local adapter reaches them with no API and no integration project.
+`--backup-root` requires `--backup-region` and refuses non-Australian regions
+unless overridden explicitly.
+
+**Filing profiles** (`--list-profiles`) own the folder layout, filename pattern,
+document vocabulary, character set and path limits. `nested-default`,
+`category-flat` (how most practice-management systems organise a client file),
+`sharepoint-safe` (ASCII, short paths), `preserve-original`. Switching profile
+changes the paths and nothing else — advice events are still computed and still
+carried in the manifest even under a scheme with no folder for them.
+
+Nothing is written without `--commit`, and nothing is written for a document the
+approvals file does not approve. Documents queued for review default to
+`reject`, so the safe outcome is the one you get by doing nothing. Re-running is
+idempotent: filing is keyed on a content hash, so the same batch applied twice
+does not produce two copies. See `docs/INTEGRATION.md`.
+
 ## Real documents and client data
 
 Real advice files contain client PII: names, assets and liabilities, income,
@@ -154,15 +199,18 @@ advicefiler/
   entities.py          clients, dates, risk categories, product names
   events.py            advice-event grouping
   flags.py             the edge-case rules engine
-  naming.py            folder and file names, from the KB's patterns
+  profiles.py          firm filing schemes (folder layout, vocabulary, limits)
   storage.py           the folder plan (data only — nothing is written)
+  integrate.py         manifest/CSV/script export, approvals, destinations
   evaluate.py          ground truth, failure log, confidence calibration
   report.py            console output, both display modes
+profiles/              four filing schemes; copy one to match a firm
 docs/
   ARCHITECTURE.md      how the pieces fit and why
+  INTEGRATION.md       connecting to a firm's existing filing system
   STEP3-RUNBOOK.md     putting real documents through, and what to do with misses
 legacy/harness_v0.py   the keyword prototype, kept for before/after comparison
-tests/                 38 regression tests, one per bug v0 actually made
+tests/                 48 regression tests, one per bug v0 actually made
 ```
 
 ## Build sequence

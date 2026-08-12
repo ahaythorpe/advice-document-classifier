@@ -16,6 +16,7 @@ package still runs end to end against sample_documents.json.
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import unicodedata
@@ -181,6 +182,12 @@ class ExtractedDocument(object):
         self.source_path = source_path
         self.backend = backend
         self.quality = quality or assess_quality(text, page_count)
+
+    @property
+    def content_id(self) -> str:
+        """Short stable id from the text, used for idempotent re-filing."""
+        digest = hashlib.sha256(self.text.encode("utf-8")).hexdigest()
+        return digest[:16]
 
     @property
     def suffix(self) -> str:

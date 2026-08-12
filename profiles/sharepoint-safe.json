@@ -1,0 +1,45 @@
+{
+  "id": "sharepoint-safe",
+  "name": "SharePoint / OneDrive safe",
+  "description": "ASCII only, no characters SharePoint or OneDrive reject or mangle, and a shorter path budget. SharePoint URL-encodes the path, so a name that is legal on disk can still blow the server limit once encoded; this profile keeps well inside it. Use for any sync-based destination, including Teams document libraries.",
+  "charset": "ascii",
+  "max_path_chars": 210,
+  "max_name_chars": 80,
+  "extra_illegal_chars": "#%&{}~+",
+  "folders": {
+    "client": "{client}",
+    "event": "{event_date:%Y-%m} {subject} ({record_label}{sub_kind_suffix})",
+    "category": "{category}",
+    "client_level": "Client Level",
+    "licensee": "Licensee",
+    "review": "Needs Review"
+  },
+  "layout": {
+    "event_document": [
+      "client",
+      "event"
+    ],
+    "client_level_document": [
+      "client",
+      "client_level"
+    ],
+    "licensee_document": [
+      "licensee"
+    ],
+    "review_with_client": [
+      "client",
+      "review"
+    ],
+    "review_without_client": [
+      "review"
+    ]
+  },
+  "filename": {
+    "client_document": "{date:%Y-%m-%d} {client} {type_label}",
+    "licensee_document": "{date:%Y-%m-%d} {type_label}",
+    "undated": "undated",
+    "keep_original": false
+  },
+  "type_labels": {},
+  "categories": {}
+}
