@@ -91,6 +91,15 @@ page swaps between precomputed results, which demonstrates the point worth
 demonstrating: the folders change and the classification, the advice events and
 the flags do not.
 
+The page's design lives in `web-react/` (React + Vite). It builds to one
+self-contained HTML template, `web-react/dist/index.html`, which is committed, so
+the two commands above need only Python. After changing the design, rebuild the
+template first:
+
+```bash
+cd web-react && npm ci && npm run build && cd ..
+```
+
 It is a **showcase with synthetic data only**:
 
 * the same interface, the same sample documents, no upload, no file writing;

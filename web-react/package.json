@@ -1,0 +1,20 @@
+{
+  "name": "advice-document-filing-web",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview:sample": "vite build && node -e \"const f=require('fs');f.writeFileSync('dist/demo.html',f.readFileSync('dist/index.html','utf8').replace('__DATA__',f.readFileSync('sample-data.json','utf8')))\""
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "vite": "^5.4.21",
+    "vite-plugin-singlefile": "^2.3.4"
+  },
+  "private": true,
+  "type": "module"
+}

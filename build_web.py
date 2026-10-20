@@ -23,89 +23,14 @@ import shutil
 from advicefiler import extract, integrate, pipeline
 from advicefiler.kb import KnowledgeBase
 from advicefiler.profiles import FilingProfile, available
-from advicefiler.webassets import CSS, RENDER_JS, THEME_HEAD, THEME_JS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "web")
 
-PAGE = r"""<!doctype html>
-<html lang="en"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Advice Document Filing — demonstration</title>
-<meta name="description" content="Classifies and files Australian financial-advice documents into a client and advice-event tree, flagging anything it cannot confidently place.">
-__THEME_HEAD__
-<style>__CSS__
-.pick{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:26px 0 0}
-.pick label{font-size:13px;color:var(--mute)}
-.pick p{flex-basis:100%;margin:0;font-size:12.5px;color:var(--faint);max-width:62ch}
-</style>
-<div class="notice"><div class="wrap">
-  <b>Demonstration only.</b><span>Every document below is fabricated. Never use
-  this page for real client files — it has no upload control because there is
-  nowhere for one to go. Firms piloting the tool will run it as a desktop app on
-  their own computers, so confidential documents never leave the firm.
-  <a href="https://github.com/ahaythorpe/advice-document-classifier/blob/main/docs/DEPLOYMENT.md">Why local&nbsp;&rarr;</a></span>
-</div></div>
-<div class="top"><div class="wrap">
-  <p class="brand">Advice Document Filing</p>
-  <span class="grow"></span>
-  <a class="ghost" style="text-decoration:none"
-     href="https://github.com/ahaythorpe/advice-document-classifier">Source</a>
-  <button class="ghost" id="theme" onclick="cycleTheme()">Auto</button>
-</div></div>
-
-<div class="wrap">
-  <div class="intro">
-    <h1>A messy client folder in, a proposed filing out</h1>
-    <p>For each document the tool decides what it is, which client and which
-    <em>advice event</em> it belongs to, and proposes where to file it — or
-    refuses, and says why. It never files silently.</p>
-  </div>
-
-  <div class="pick">
-    <label for="profile">Filing scheme</label>
-    <select id="profile"></select>
-    <p id="pdesc"></p>
-  </div>
-
-  <div class="summary" id="summary"></div>
-
-  <div class="sec"><h2>Advice events</h2><div id="events"></div></div>
-  <div class="sec"><h2>Proposed folder tree</h2><pre class="tree" id="tree"></pre></div>
-
-  <footer>
-    Knowledge base v<span id="kbv"></span> · Australia, Corporations Act 2001, ASIC.
-    Not legal advice.<br>
-    Changing the filing scheme changes the folders and nothing else — the
-    classification, the advice events and the findings are identical. That is what
-    lets the tool fit a firm&rsquo;s existing system instead of replacing it.
-  </footer>
-</div>
-
-<script>
-__THEME_JS__
-__RENDER_JS__
-const DATA = __DATA__;
-const $=s=>document.querySelector(s);
-const names=Object.keys(DATA);
-paintThemeButton();
-
-$('#profile').innerHTML=names.map(n=>
-  `<option value="${n}">${esc(DATA[n].profile_name)}</option>`).join('');
-$('#profile').onchange=e=>render(e.target.value);
-
-function render(name){
-  const d=DATA[name];
-  $('#pdesc').textContent=d.profile_description;
-  $('#kbv').textContent=d.knowledge_base_version;
-  $('#summary').innerHTML=summaryHtml(d);
-  $('#events').innerHTML=groupsHtml(d,false);
-  $('#tree').innerHTML=treeText(d);
-}
-render(names[0]);
-</script>
-</html>
-"""
+# The page itself is a React app in web-react/, built to one self-contained HTML
+# file (npm run build). Its only placeholder is __DATA__. The built template is
+# committed so this script still runs with nothing but Python.
+TEMPLATE = os.path.join(HERE, "web-react", "dist", "index.html")
 
 
 def build() -> None:
@@ -131,13 +56,13 @@ def build() -> None:
     if os.path.isdir(OUT):
         shutil.rmtree(OUT)
     os.makedirs(OUT)
-    with open(os.path.join(OUT, "index.html"), "w") as fh:
-        page = (PAGE.replace("__THEME_HEAD__", THEME_HEAD)
-                    .replace("__CSS__", CSS)
-                    .replace("__THEME_JS__", THEME_JS)
-                    .replace("__RENDER_JS__", RENDER_JS)
-                    .replace("__DATA__", json.dumps(payload, ensure_ascii=False)))
-        fh.write(page)
+    with open(os.path.join(OUT, "index.html"), "w", encoding="utf-8") as fh:
+        with open(TEMPLATE, encoding="utf-8") as tf:
+            page = tf.read()
+        assert page.count("__DATA__") == 1, "web-react template must hold one __DATA__"
+        # "</" inside the JSON would end the inline <script> early.
+        fh.write(page.replace("__DATA__", json.dumps(payload, ensure_ascii=False)
+                                              .replace("</", "<\\/")))
     with open(os.path.join(OUT, "vercel.json"), "w") as fh:
         json.dump({
             "$schema": "https://openapi.vercel.sh/vercel.json",
