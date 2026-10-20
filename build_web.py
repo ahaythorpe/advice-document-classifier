@@ -40,9 +40,11 @@ __THEME_HEAD__
 .pick p{flex-basis:100%;margin:0;font-size:12.5px;color:var(--faint);max-width:62ch}
 </style>
 <div class="notice"><div class="wrap">
-  <b>Demonstration.</b><span>Every document below is fabricated. The real tool runs
-  on an adviser&rsquo;s own machine and uploads nothing — this page has no upload
-  control because there is nowhere for a client file to go.</span>
+  <b>Demonstration only.</b><span>Every document below is fabricated. Never use
+  this page for real client files — it has no upload control because there is
+  nowhere for one to go. Firms piloting the tool will run it as a desktop app on
+  their own computers, so confidential documents never leave the firm.
+  <a href="https://github.com/ahaythorpe/advice-document-classifier/blob/main/docs/DEPLOYMENT.md">Why local&nbsp;&rarr;</a></span>
 </div></div>
 <div class="top"><div class="wrap">
   <p class="brand">Advice Document Filing</p>
