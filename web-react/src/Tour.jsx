@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { Icon } from './atoms.jsx';
 
 const soa = (d) => d.documents.find((x) => x.type_label === 'SOA');
 
@@ -15,7 +14,7 @@ export const STEPS = [
   {
     view: 'overview', target: 'a.nav[href="#events"]', click: true,
     title: 'Open the advice events',
-    body: 'Click Advice events in the sidebar.',
+    body: 'Click Advice events.',
   },
   {
     view: 'events', target: (d) => `.view:not([hidden]) tr[data-doc="${soa(d).doc_id}"]`, click: true,
@@ -97,12 +96,14 @@ function place(rect) {
   return { left: clampX(rect.left), top: clampY(rect.top - PAD - 200), width: w };
 }
 
-export default function Tour({ d, step, onStep, onClose }) {
+export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
   const s = STEPS[step];
   const last = step === STEPS.length - 1;
   const selector = typeof s.target === 'function' ? s.target(d) : s.target;
   const rect = useRect(selector);
   const next = () => (last ? onClose() : onStep(step + 1));
+  // Back from the first step returns to the welcome popup, so Back always does something.
+  const back = () => (step === 0 ? onBackToStart() : onStep(step - 1));
 
   // For click steps, the visitor's own click on the spotlit element moves the tour on.
   useEffect(() => {
@@ -116,6 +117,9 @@ export default function Tour({ d, step, onStep, onClose }) {
   });
 
   const pos = place(rect);
+  // Phones pin the card to the bottom edge; when the spotlit element is in the
+  // lower half it moves to the top so it never covers what it describes.
+  const low = rect && rect.top + rect.height / 2 > window.innerHeight / 2;
   return (
     <>
       {rect && (
@@ -123,11 +127,9 @@ export default function Tour({ d, step, onStep, onClose }) {
           top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2,
         }} />
       )}
-      <div className="tour" role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
+      <div className={`tour ${low ? 'low' : ''}`} role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
         <div className="tour-head">
           <span className="tour-n">{step + 1} of {STEPS.length}</span>
-          <span className="grow" />
-          <button className="ibtn" title="Close tour" onClick={onClose}><Icon id="x" /></button>
         </div>
         <b>{s.title}</b>
         <p>{s.body}</p>
@@ -135,9 +137,9 @@ export default function Tour({ d, step, onStep, onClose }) {
           {STEPS.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}
         </div>
         <div className="tour-acts">
-          {!last && <button className="link-btn" onClick={onClose}>Skip tour</button>}
+          <button className="link-btn" onClick={onClose}>Skip</button>
           <span className="grow" />
-          <button className="btn sm" disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
+          <button className="btn sm" onClick={back}>Back</button>
           <button className="btn sm primary" onClick={next}>{last ? 'Finish' : 'Next'}</button>
         </div>
       </div>

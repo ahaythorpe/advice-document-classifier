@@ -24,7 +24,6 @@ export default function Welcome({ onTour, onClose }) {
   return (
     <div className="scrim" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-        <button className="ibtn welcome-x" title="Close" onClick={onClose}><Icon id="x" /></button>
         <span className="demo-tag">Demo only</span>
         <h2 id="welcome-title">Advice Document Filing</h2>
         <p className="welcome-lede">A tool that reads a financial-advice firm’s client documents,
@@ -40,9 +39,12 @@ export default function Welcome({ onTour, onClose }) {
           {NOT.map(([k, v]) => <li key={k}><Icon id="shield" /><span><b>{k}</b> {v}</span></li>)}
         </ul>
 
+        {/* Same three buttons as every tour step. Back has nowhere to go on the first popup. */}
         <div className="welcome-acts">
-          <button className="btn" onClick={onClose}>Explore on my own</button>
-          <button ref={first} className="btn primary" onClick={onTour}><Icon id="play" />Take the 1-minute tour</button>
+          <button className="link-btn" onClick={onClose}>Skip</button>
+          <span className="grow" />
+          <button className="btn sm" disabled>Back</button>
+          <button ref={first} className="btn sm primary" onClick={onTour}>Next</button>
         </div>
       </div>
     </div>
