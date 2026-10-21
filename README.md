@@ -66,7 +66,7 @@ Nguyen — 2024-03-14 [SOA]
                                        advice record recommends
 
 [Nguyen]
-   +- [2024-03 — Retirement & Super Consolidation [SOA]]
+   +- [2024-03 - Retirement & Super Consolidation]
    |     - 2024-03-02 - Nguyen - RiskProfile.pdf
    |         !! risk_mismatch: assessed the client as 'balanced', but that
    |            category does not appear in the SOA it feeds (scan_004.pdf)

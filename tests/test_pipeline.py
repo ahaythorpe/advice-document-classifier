@@ -236,9 +236,15 @@ class TestPlacement(SharedRun):
 
     def test_event_folder_follows_the_naming_pattern(self):
         folders = set("/".join(p.folder) for p in self.result.plan.files)
-        self.assertIn("Nguyen/2024-03 - Retirement & Super Consolidation [SOA]",
-                      folders)
-        self.assertIn("Nguyen/2025-09 - Insurance [ROA · further advice]", folders)
+        self.assertIn("Nguyen/2024-03 - Retirement & Super Consolidation", folders)
+        self.assertIn("Nguyen/2025-09 - Insurance", folders)
+
+    def test_event_folder_is_not_named_after_one_document_type(self):
+        # An event folder holds the fact find, SOA, ATP and the rest, so a
+        # label like "[SOA]" would misdescribe everything else in it.
+        for planned in self.result.plan.files:
+            for part in planned.folder:
+                self.assertNotRegex(part, r"[\[(](SOA|ROA|CAR)\b", part)
 
     def test_licensee_material_is_not_an_orphan(self):
         record = self.by_name["scan_001.pdf"]

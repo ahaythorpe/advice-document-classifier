@@ -18,11 +18,12 @@ const markWelcomed = () => { try { localStorage.setItem('welcomed', '1'); } catc
 const viewFromHash = () => (VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'overview');
 
 function useTheme() {
-  const read = () => { try { return localStorage.getItem('theme') || 'auto'; } catch { return 'auto'; } };
+  // Light by default; Auto follows the computer's setting.
+  const read = () => { try { return localStorage.getItem('theme') || 'light'; } catch { return 'light'; } };
   const [mode, setMode] = useState(read);
   useEffect(() => {
     const el = document.documentElement;
-    try { mode === 'auto' ? localStorage.removeItem('theme') : localStorage.setItem('theme', mode); } catch { /* demo: storage optional */ }
+    try { localStorage.setItem('theme', mode); } catch { /* demo: storage optional */ }
     mode === 'auto' ? el.removeAttribute('data-theme') : el.setAttribute('data-theme', mode);
   }, [mode]);
   return [mode, setMode];
