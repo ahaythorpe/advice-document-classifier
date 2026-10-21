@@ -97,12 +97,14 @@ function place(rect) {
   return { left: clampX(rect.left), top: clampY(rect.top - PAD - 200), width: w };
 }
 
-export default function Tour({ d, step, onStep, onClose }) {
+export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
   const s = STEPS[step];
   const last = step === STEPS.length - 1;
   const selector = typeof s.target === 'function' ? s.target(d) : s.target;
   const rect = useRect(selector);
   const next = () => (last ? onClose() : onStep(step + 1));
+  // Back from the first step returns to the welcome popup, so Back always does something.
+  const back = () => (step === 0 ? onBackToStart() : onStep(step - 1));
 
   // For click steps, the visitor's own click on the spotlit element moves the tour on.
   useEffect(() => {
@@ -135,9 +137,9 @@ export default function Tour({ d, step, onStep, onClose }) {
           {STEPS.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}
         </div>
         <div className="tour-acts">
-          {!last && <button className="link-btn" onClick={onClose}>Skip tour</button>}
+          <button className="link-btn" onClick={onClose}>Skip</button>
           <span className="grow" />
-          <button className="btn sm" disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
+          <button className="btn sm" onClick={back}>Back</button>
           <button className="btn sm primary" onClick={next}>{last ? 'Finish' : 'Next'}</button>
         </div>
       </div>

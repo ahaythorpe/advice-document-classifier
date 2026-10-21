@@ -208,7 +208,13 @@ export default function App() {
         </div>
       </div>
 
-      {tour !== null && <Tour d={d} step={tour} onStep={tourTo} onClose={endTour} />}
+      {tour !== null && <Tour d={d} step={tour} onStep={tourTo} onClose={endTour}
+        onBackToStart={() => { endTour(); setWelcome(true); }} />}
+      {/* Hidden while a narrow screen's document panel is open: it would sit on Reject. */}
+      {tour === null && !welcome && !(showInspector && !wide) && (
+        <button className="fab" title="How it works and the tour" aria-label="How it works and the tour"
+          onClick={() => setWelcome(true)}><span aria-hidden="true">👋</span></button>
+      )}
       {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); tourTo(0); }} />}
     </div>
   );
