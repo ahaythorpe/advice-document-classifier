@@ -1,61 +1,144 @@
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Icon } from './atoms.jsx';
 
-// A short guided walk through the demo. Each step opens a view, and may select a
-// document so the inspector has something to explain.
+const soa = (d) => d.documents.find((x) => x.type_label === 'SOA');
+
+// A click-through tour. Each step opens a view, spotlights one element and says
+// what it does. Steps marked `click` ask the visitor to click the element
+// themselves, and move on when they do; Next always works too.
 export const STEPS = [
   {
-    view: 'overview',
+    view: 'overview', target: '.stats',
     title: 'A messy client folder',
-    body: 'Ten fabricated documents, scanned and named scan_001 to scan_010, the way they often arrive. The tool has read every one and worked out what it is.',
+    body: 'Ten fabricated documents, scanned and named scan_001 to scan_010, the way they often arrive. The tool has read every one. These tiles sum up what it found.',
   },
   {
-    view: 'events',
-    title: 'Grouped by advice event',
-    body: 'Documents are grouped by client and by the piece of advice they belong to: the fact find, risk profile, SOA and authority to proceed for one recommendation sit together.',
-    select: (d) => d.documents.find((x) => x.type_label === 'SOA'),
+    view: 'overview', target: 'a.nav[href="#events"]', click: true,
+    title: 'Open the advice events',
+    body: 'Click Advice events in the sidebar.',
   },
   {
-    view: 'events',
+    view: 'events', target: (d) => `.view:not([hidden]) tr[data-doc="${soa(d).doc_id}"]`, click: true,
+    title: 'Grouped by piece of advice',
+    body: 'The fact find, risk profile, SOA and authority to proceed for one recommendation sit together. Click the SOA to see how the tool read it.',
+  },
+  {
+    view: 'events', target: '.insp-body', select: soa,
     title: 'Why it was placed there',
-    body: 'The panel on the right shows the reasoning: the type, how confident the tool is, the words it found, and where it proposes to file it. Nothing is filed until a person presses Approve.',
-    select: (d) => d.documents.find((x) => x.type_label === 'SOA'),
+    body: 'The type, how confident the tool is, the words it found as evidence, any compliance findings, and the folder it proposes.',
   },
   {
-    view: 'review',
+    view: 'events', target: '.insp-foot', select: soa,
+    title: 'A person decides',
+    body: 'Nothing is filed until someone presses Approve. Try it: in this demo nothing is saved.',
+  },
+  {
+    view: 'events', target: 'a.nav[href="#review"]', click: true,
+    title: 'What it would not file',
+    body: 'Click Needs review.',
+  },
+  {
+    view: 'review', target: '.rv-list',
     title: 'It refuses rather than guesses',
     body: 'When the tool is not sure, it holds the document for a person and says why. A wrongly filed client record is a compliance problem, so the bar is certainty.',
   },
   {
-    view: 'tree',
+    view: 'tree', target: '.scheme',
     title: 'Fits the firm’s own system',
-    body: 'This is the proposed filing. Change the Filing scheme at the top right to match how a firm already organises its files: only the folders change, never the classification.',
+    body: 'This is the proposed folder tree. Switch the filing scheme here to match how a firm already organises its files: only the folders change, never the classification.',
   },
   {
-    view: 'about',
+    view: 'about', target: '.about .why',
     title: 'Why I built this',
-    body: 'The short version is on this page: big advice software is clunky and expensive, and none of it reads a document for you. That is the gap this fills.',
+    body: 'Big advice software is clunky and expensive, and none of it reads a document for you. This is small, sits on top of what a firm already uses, and runs on its own computer.',
   },
 ];
 
-export default function Tour({ step, onStep, onClose }) {
+const PAD = 6;
+const CARD = 330;
+
+// Follows the target every frame, so the spotlight stays right when the view
+// changes, a panel opens or the page scrolls. Gone if the target is not on screen.
+function useRect(selector) {
+  const [rect, setRect] = useState(null);
+  useLayoutEffect(() => {
+    let raf = 0;
+    let last = '';
+    let scrolled = false;
+    const tick = () => {
+      const el = selector && document.querySelector(selector);
+      const r = el && el.getBoundingClientRect();
+      const next = r && r.width && r.height ? { top: r.top, left: r.left, width: r.width, height: r.height } : null;
+      if (el && next && !scrolled && el.scrollIntoView) { el.scrollIntoView({ block: 'nearest' }); scrolled = true; }
+      const key = JSON.stringify(next);
+      if (key !== last) { last = key; setRect(next); }
+      raf = requestAnimationFrame(tick);
+    };
+    tick();
+    return () => cancelAnimationFrame(raf);
+  }, [selector]);
+  return rect;
+}
+
+// Beside the target if there is room, otherwise below or above it, always on screen.
+function place(rect) {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = Math.min(CARD, vw - 32);
+  if (!rect) return { left: (vw - w) / 2, top: vh - 220, width: w };
+  const clampX = (x) => Math.max(16, Math.min(x, vw - w - 16));
+  const clampY = (y) => Math.max(16, Math.min(y, vh - 200));
+  if (rect.left + rect.width + PAD + 16 + w < vw && rect.height < vh / 2) {
+    return { left: rect.left + rect.width + PAD + 14, top: clampY(rect.top - 4), width: w };
+  }
+  if (rect.top + rect.height + PAD + 210 < vh) {
+    return { left: clampX(rect.left), top: rect.top + rect.height + PAD + 12, width: w };
+  }
+  return { left: clampX(rect.left), top: clampY(rect.top - PAD - 200), width: w };
+}
+
+export default function Tour({ d, step, onStep, onClose }) {
   const s = STEPS[step];
   const last = step === STEPS.length - 1;
+  const selector = typeof s.target === 'function' ? s.target(d) : s.target;
+  const rect = useRect(selector);
+  const next = () => (last ? onClose() : onStep(step + 1));
+
+  // For click steps, the visitor's own click on the spotlit element moves the tour on.
+  useEffect(() => {
+    if (!s.click) return undefined;
+    const on = (e) => {
+      const el = document.querySelector(selector);
+      if (el && el.contains(e.target)) setTimeout(next, 0);
+    };
+    document.addEventListener('click', on, true);
+    return () => document.removeEventListener('click', on, true);
+  });
+
+  const pos = place(rect);
   return (
-    <div className="tour" role="dialog" aria-label="Guided tour" aria-live="polite">
-      <div className="tour-head">
-        <span className="tour-n">{step + 1} of {STEPS.length}</span>
-        <span className="grow" />
-        <button className="ibtn" title="Close tour" onClick={onClose}><Icon id="x" /></button>
+    <>
+      {rect && (
+        <div className={`spot ${s.click ? 'pulse' : ''}`} aria-hidden="true" style={{
+          top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2,
+        }} />
+      )}
+      <div className="tour" role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
+        <div className="tour-head">
+          <span className="tour-n">{step + 1} of {STEPS.length}</span>
+          <span className="grow" />
+          <button className="ibtn" title="Close tour" onClick={onClose}><Icon id="x" /></button>
+        </div>
+        <b>{s.title}</b>
+        <p>{s.body}</p>
+        <div className="tour-dots" aria-hidden="true">
+          {STEPS.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}
+        </div>
+        <div className="tour-acts">
+          <button className="btn sm" disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
+          <button className="btn sm primary" onClick={next}>{last ? 'Finish' : s.click ? 'Skip' : 'Next'}</button>
+        </div>
       </div>
-      <b>{s.title}</b>
-      <p>{s.body}</p>
-      <div className="tour-dots" aria-hidden="true">
-        {STEPS.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}
-      </div>
-      <div className="tour-acts">
-        <button className="btn sm" disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
-        <button className="btn sm primary" onClick={() => (last ? onClose() : onStep(step + 1))}>{last ? 'Finish' : 'Next'}</button>
-      </div>
-    </div>
+    </>
   );
 }

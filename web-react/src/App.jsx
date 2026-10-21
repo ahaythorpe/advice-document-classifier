@@ -196,7 +196,7 @@ export default function App() {
         </div>
       </div>
 
-      {tour !== null && <Tour step={tour} onStep={tourTo} onClose={endTour} />}
+      {tour !== null && <Tour d={d} step={tour} onStep={tourTo} onClose={endTour} />}
       {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); tourTo(0); }} />}
     </div>
   );
