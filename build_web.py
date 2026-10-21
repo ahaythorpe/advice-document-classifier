@@ -60,16 +60,33 @@ def _plain(value):
     return value
 
 
+# The page opens on this scheme. Client then advice event is the point of the
+# tool: grouping by client alone is something a firm can do by procedure.
+DEFAULT_PROFILE = "nested-default"
+
+
+def _stages(kb, doc_type):
+    """Advice process stages a document type belongs to, from the knowledge base.
+
+    A label on the document, not a folder (filing_model.stage_label).
+    """
+    return ["%s %s" % (s["stage"], s["name"])
+            for s in kb.data.get("advice_process_stages", [])
+            if doc_type in s.get("typical_docs", [])]
+
+
 def _dataset(kb, documents, key, label, note):
     """Run one batch under every filing profile, stripped for a public page."""
     profiles = {}
-    for name in available():
+    names = available()
+    for name in sorted(names, key=lambda n: n != DEFAULT_PROFILE):
         profile = FilingProfile.load(name)
         result = pipeline.run(kb, copy.deepcopy(documents), profile=profile)
         data = integrate.manifest(result)
         # Nothing about the machine that built this belongs in a public page.
         for doc in data["documents"]:
             doc.pop("source_path", None)
+            doc["stages"] = _stages(kb, doc.get("type"))
         data["batch"].pop("unreadable", None)
         data["generated"] = None
         data["profile_name"] = profile.name
