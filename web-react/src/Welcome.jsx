@@ -11,7 +11,7 @@ const HOW = [
 ];
 
 const NOT = [
-  ['No client data.', 'The main sample folder is made up down to the licence numbers. The second set is PDFs their issuers publish: ASIC examples, blank templates and fund PDSs. Only the results are shown here. The PDFs are not hosted.'],
+  ['No client data.', 'The main sample folder is made up down to the licence numbers. The second set is PDFs their issuers publish: ASIC examples, blank templates and fund PDSs. You see what the tool decided about each one. The PDFs themselves are not on this website.'],
   ['Nothing is uploaded or saved.', 'There is no upload control. Your clicks stay in this browser tab.'],
   ['Not financial advice.', 'The tool describes documents that already exist. It never writes or recommends advice.'],
   ['Not legal advice.', 'Its rules are mapped to the Corporations Act and ASIC guidance. They still need professional sign-off.'],
