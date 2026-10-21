@@ -10,7 +10,7 @@ export const STEPS = [
   {
     view: 'overview', target: '.stats',
     title: 'A messy client folder',
-    body: 'Ten fabricated documents, scanned and named scan_001 to scan_010, the way they often arrive. The tool has read every one. These tiles sum up what it found.',
+    body: 'Ten demo documents, scanned and named scan_001 to scan_010, the way they often arrive. The tool has read every one. These tiles sum up what it found.',
   },
   {
     view: 'overview', target: 'a.nav[href="#events"]', click: true,

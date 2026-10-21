@@ -21,7 +21,7 @@ export function Overview({ d, go, startTour }) {
       <p className="lede">For each document the tool decides what it is, which client and which{' '}
         <em>advice event</em> it belongs to. Then it proposes where to file it
         or refuses and says why. It never files silently.</p>
-      {d.dataset === 'public' && <div className="box sub set-note"><Icon id="info" /><span>{d.dataset_note}</span></div>}
+      {d.dataset_note && <div className="box sub set-note"><Icon id="info" /><span>{d.dataset_note}</span></div>}
       <button className="btn primary tour-cta" onClick={startTour}><Icon id="play" />Take the 1-minute tour</button>
       <div className="stats">
         {stats.map((t) => (
@@ -218,7 +218,7 @@ export function About({ whyLocal }) {
       <div className="box">
         <h3><Icon id="lock" />Built with privacy in mind</h3>
         <p>Client files are confidential. A hosted version of the tool would mean uploading them to somebody else’s computer. That is a data-residency decision for the licensee, not a deployment choice.</p>
-        <p>That is why the design keeps documents on the firm’s own computer. This page is a prototype demo on fabricated and publicly published documents. It has no upload control because there is nowhere for one to go. <a href={whyLocal}>Read more&nbsp;&rarr;</a></p>
+        <p>That is why the design keeps documents on the firm’s own computer. This page is a prototype demo on demo and publicly published documents. It has no upload control because there is nowhere for one to go. <a href={whyLocal}>Read more&nbsp;&rarr;</a></p>
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>

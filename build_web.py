@@ -34,12 +34,13 @@ OUT = os.path.join(HERE, "web")
 # committed so this script still runs with nothing but Python.
 TEMPLATE = os.path.join(HERE, "web-react", "dist", "index.html")
 
-# The sample sets a visitor can switch between. The fabricated folder is always
+# The sample sets a visitor can switch between. The demo folder is always
 # built; the public one only when its PDFs are on this machine (they are not in
 # git), so the page shows that set's results, never the documents themselves.
-FABRICATED = ("fabricated", "Fabricated client folder",
-              "Ten made-up documents for one invented household, written to show "
-              "the whole flow: grouping, findings and what gets held for review.")
+DEMO = ("demo", "Demo client folder",
+              "Ten demo documents for one example household. Every name and detail is made "
+              "up to protect privacy and meet compliance rules. They show "
+              "the whole flow: grouping, points to check and what gets held for review.")
 PUBLIC = ("public", "Public sample PDFs",
           "Real PDFs that issuers publish: ASIC's annotated example SOAs and ROAs, "
           "blank fact-find and risk-profile templates, super fund PDSs, plus "
@@ -83,7 +84,7 @@ def build(public_samples=None) -> None:
     with open(os.path.join(HERE, "sample_documents.json")) as fh:
         records = json.load(fh)["documents"]
 
-    payload = {FABRICATED[0]: _dataset(kb, extract.from_sample_records(records), *FABRICATED)}
+    payload = {DEMO[0]: _dataset(kb, extract.from_sample_records(records), *DEMO)}
     if public_samples:
         documents, failures = extract.extract_directory(public_samples, recursive=True)
         documents = [d for d in documents if d.name.lower().endswith(".pdf")]

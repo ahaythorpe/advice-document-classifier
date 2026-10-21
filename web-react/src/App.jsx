@@ -84,7 +84,7 @@ export default function App() {
   const tourTo = (i) => {
     const s = TOUR[i];
     setTour(i);
-    setSet(SETS[0]);                    // the tour is written about the fabricated folder
+    setSet(SETS[0]);                    // the tour is written about the demo folder
     go(s.view);
     const pick = s.select && s.select(DATASETS[SETS[0]][profile]);
     setSelected(pick ? pick.doc_id : null);
@@ -125,7 +125,7 @@ export default function App() {
         <span className="demo-tag">Demo only</span>
         <div className="msg">
           <b>Prototype demo, shared to show how the idea works.</b>
-          <span>Fabricated and publicly published documents only. There is no upload control, so no real client file can be added.</span>
+          <span>Demo and publicly published documents only. Names and details are made up to protect privacy. There is no upload control, so no real client file can be added.</span>
         </div>
         <a href={WHY_LOCAL}>Read more&nbsp;&rarr;</a>
       </div>
