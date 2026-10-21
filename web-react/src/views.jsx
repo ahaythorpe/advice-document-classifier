@@ -256,6 +256,9 @@ function Folder({ name, node, selected, onSelect, decisions }) {
   );
 }
 
+// Already in a stage folder ("4 Advice delivery"), so the label would only repeat it.
+const inStageFolder = (x) => /^\d /.test(((x.destination || {}).folder || []).slice(-1)[0] || '');
+
 function Branch({ node, selected, onSelect, decisions }) {
   const files = node.files.slice().sort((a, b) =>
     ((a.destination || {}).filename || '').localeCompare((b.destination || {}).filename || ''));
@@ -269,7 +272,7 @@ function Branch({ node, selected, onSelect, decisions }) {
           <button className="tr" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} title={x.source_name} data-doc={x.doc_id}>
             <span className="fl"><Icon id="file" /></span>
             <span className="nm">{(x.destination || {}).filename || x.source_name}
-              {x.stages && x.stages.length > 0 && <small className="stg">Stage {x.stages.join(' · ')}</small>}</span>
+              {x.stages && x.stages.length > 0 && !inStageFolder(x) && <small className="stg">{x.stages.join(' · ')}</small>}</span>
             <span className="ty">{decisions[x.doc_id] === 'approve' && <span className="filed-tag"><Icon id="check" />Filed</span>}
               <Type>{x.type_label}</Type><i className={`dot ${cls(statusOf(x))}`} /></span>
           </button>

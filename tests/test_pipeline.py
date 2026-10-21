@@ -364,6 +364,25 @@ class TestIntegration(SharedRun):
         anchored = [d for d in data["documents"] if d["event_id"]]
         self.assertGreaterEqual(len(anchored), 6)
 
+    def test_stage_profile_adds_a_stage_folder_inside_the_event(self):
+        """stage-nested files each event document under its advice stage.
+
+        Only the practical steps get folders. Documents outside an event (FSG)
+        keep their usual place.
+        """
+        from advicefiler.profiles import FilingProfile
+        result = pipeline.run(self.kb, self.documents,
+                              profile=FilingProfile.load("stage-nested"))
+        data = integrate.manifest(result)
+        by_type = {d["type"]: d["destination"]["folder"] for d in data["documents"]
+                   if d["event_id"] and not d["needs_review"]}
+        self.assertEqual(by_type["soa"][-1], "2 Advice")
+        self.assertEqual(by_type["fact_find"][-1], "1 Goals and situation")
+        self.assertEqual(by_type["authority_to_proceed"][-1], "3 Implementation")
+        self.assertEqual(len(by_type["soa"]), 3)   # client, event, stage
+        fsg = [d for d in data["documents"] if d["type"] == "fsg"][0]
+        self.assertNotIn("2 Advice", fsg["destination"]["folder"])
+
     def test_manifest_is_stable_and_keyed_by_content(self):
         data = integrate.manifest(self.result)
         self.assertEqual(data["schema"], integrate.MANIFEST_SCHEMA)

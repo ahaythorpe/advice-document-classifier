@@ -62,7 +62,7 @@ def _plain(value):
 
 # The page opens on this scheme. Client then advice event is the point of the
 # tool: grouping by client alone is something a firm can do by procedure.
-DEFAULT_PROFILE = "nested-default"
+DEFAULT_PROFILE = "stage-nested"
 
 
 def _stages(kb, doc_type):
@@ -70,7 +70,7 @@ def _stages(kb, doc_type):
 
     A label on the document, not a folder (filing_model.stage_label).
     """
-    return ["%s %s" % (s["stage"], s["name"])
+    return ["Step %s %s" % (s["stage"], s["name"])
             for s in kb.data.get("advice_process_stages", [])
             if doc_type in s.get("typical_docs", [])]
 

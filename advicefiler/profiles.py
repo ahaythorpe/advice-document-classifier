@@ -125,6 +125,7 @@ class FilingProfile(object):
             "type_label": _Token(label, "UNKNOWN"),
             "type_id": _Token(doc_type, "unknown"),
             "category": _Token(category, "Other"),
+            "stage": _Token(kb.stage_folder(doc_type), ""),
             "original": _Token(os.path.splitext(getattr(record, "name", ""))[0], "document"),
             "doc_id": _Token(getattr(record, "doc_id", None), "nodocid"),
             "subject": _Token(None, "Advice"),
@@ -156,7 +157,10 @@ class FilingProfile(object):
         keys = self.layout.get(kind)
         if keys is None:
             raise ProfileError("profile %s has no layout for %r" % (self.id, kind))
-        return tuple(self.folder_name(key, ctx) for key in keys)
+        # A part that renders empty (a document with no stage) is left out,
+        # not filled with a placeholder folder.
+        return tuple(self.folder_name(key, ctx) for key in keys
+                     if self._render(self.folders.get(key, "x"), ctx).strip())
 
     def file_name(self, kind: str, ctx: Dict[str, Any], extension: str) -> str:
         template = self.filename.get(kind)

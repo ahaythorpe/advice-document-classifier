@@ -79,8 +79,8 @@
   "advice_process_stages": [
     {
       "stage": 1,
-      "name": "Engagement & disclosure",
-      "plain": "The relationship is established; the client is told who the provider is, what they offer, and how they're paid — before any service is provided.",
+      "name": "Define the relationship and scope",
+      "plain": "Trust is established. The adviser explains the process and the fees and agrees what services the client needs.",
       "governing_provisions": [
         "s941A",
         "s941B",
@@ -92,8 +92,19 @@
     },
     {
       "stage": 2,
-      "name": "Discovery / fact-find",
-      "plain": "The provider gathers the client's goals, financial situation, and risk tolerance — the evidentiary basis for the best-interests duty.",
+      "name": "Identify goals",
+      "plain": "Short and long term goals are discussed, such as buying a home, funding education or retiring.",
+      "governing_provisions": [
+        "s961B (best interests)"
+      ],
+      "typical_docs": [
+        "fact_find"
+      ]
+    },
+    {
+      "stage": 3,
+      "name": "Assess the financial situation",
+      "plain": "Income, expenses, assets, debts, super, insurance and risk tolerance are reviewed. This is the evidence for the best interests duty.",
       "governing_provisions": [
         "s961B (best interests)",
         "s912G record-keeping (via ASIC Instrument 2024/508)"
@@ -104,37 +115,26 @@
       ]
     },
     {
-      "stage": 3,
-      "name": "Advice construction",
-      "plain": "Recommendations are formed and the reasoning/basis for advice is documented.",
+      "stage": 4,
+      "name": "Develop the strategic plan",
+      "plain": "The recommendations are formed and documented in a Statement of Advice, or a Record of Advice where that is permitted, and given to the client.",
       "governing_provisions": [
         "s961B",
-        "s961G (appropriate advice)"
-      ],
-      "typical_docs": [
-        "soa",
-        "car"
-      ]
-    },
-    {
-      "stage": 4,
-      "name": "Advice delivery",
-      "plain": "The advice record is given to the client, at or as soon as practicable after the advice.",
-      "governing_provisions": [
+        "s961G (appropriate advice)",
         "s946A",
         "s946C (timing)",
         "s946B + reg 7.7.10AE (ROA path)"
       ],
       "typical_docs": [
         "soa",
-        "roa",
-        "car"
+        "car",
+        "roa"
       ]
     },
     {
       "stage": 5,
-      "name": "Implementation / execution",
-      "plain": "The client authorises action and the recommendations are executed; product applications are lodged.",
+      "name": "Implement the recommendations",
+      "plain": "The plan is put into action: accounts opened, investments moved, insurance updated. The client authorises it first.",
       "governing_provisions": [
         "General s912A conduct; product application terms; dealing provisions"
       ],
@@ -145,8 +145,8 @@
     },
     {
       "stage": 6,
-      "name": "Ongoing service & review",
-      "plain": "Periodic review; ongoing fee arrangements are disclosed and consented to; smaller changes may be recorded rather than fully re-advised.",
+      "name": "Review and monitor",
+      "plain": "Periodic check ins adjust the plan for market, tax or life changes. Ongoing fee arrangements are disclosed and consented to.",
       "governing_provisions": [
         "Ongoing fee arrangement / consent provisions (Div 3 Pt 7.7A, as amended by DBFO Tranche 1)",
         "s946B + reg 7.7.10AE"
@@ -1020,6 +1020,43 @@
         "The original filename is carried on the proposal so every rename is reversible and auditable. Renaming is a proposal a human approves, like every other output of this tool.",
         "Where two documents in one event would land on the same name, a numeric suffix is appended rather than one silently overwriting the other."
       ]
+    },
+    "stage_folders": {
+      "rule": "Inside an advice event, a document can sit in a folder for its step of the financial planning process. Only the practical steps get folders: the ones whose documents belong to one piece of advice. Used by filing schemes whose layout includes 'stage'.",
+      "decided": "Bella, 21 Oct 2026: filing by client and advice event alone is not enough value. Folders follow the practical steps of the six-step process. Replaces the 9 Oct decision that stage is a label only.",
+      "folders": {
+        "1 Goals and situation": {
+          "steps": [
+            2,
+            3
+          ],
+          "docs": [
+            "fact_find",
+            "risk_profile"
+          ]
+        },
+        "2 Advice": {
+          "steps": [
+            4
+          ],
+          "docs": [
+            "soa",
+            "car",
+            "roa",
+            "pds"
+          ]
+        },
+        "3 Implementation": {
+          "steps": [
+            5
+          ],
+          "docs": [
+            "authority_to_proceed",
+            "application_forms"
+          ]
+        }
+      },
+      "folders_note": "Steps 1 and 6 are about the whole client relationship, not one piece of advice, so they have no folder inside an event. A PDS is in no step list; it is given with the advice that recommends the product, so it files with the advice. A document type in no folder files at the event level."
     }
   },
   "summary_feature": {
@@ -1327,5 +1364,6 @@
       "note": "Between propose_new_below and match sits a band that is neither: too good to be a new client, not good enough to file. That band is a question for a human, and having it is the point."
     },
     "human_in_the_loop": "A new client is confirmed once, not once per document. Approving it adds the entry to the register, and every later document for that client matches without asking again."
-  }
+  },
+  "advice_process_stages_note": "The six steps of the financial planning process as taught in financial planning study (Bella, 21 Oct 2026). Replaces the earlier six stages; typical_docs carried over, with the fact find in both goals and situation and the SOA in one step."
 }
