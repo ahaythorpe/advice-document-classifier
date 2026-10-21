@@ -13,10 +13,13 @@ export const FileIcon = ({ doc }) => (
   </span>
 );
 
-export const Confidence = ({ doc }) => {
+// The tick on the bar is the firm's threshold: below it the tool will not file.
+export const Confidence = ({ doc, threshold }) => {
+  const low = threshold != null && doc.confidence < threshold;
   return (
-    <span className="conf" title={`Confidence ${doc.confidence.toFixed(2)}`}>
-      <span className="bar"><i style={{ width: `${pct(doc.confidence)}%` }} /></span>
+    <span className="conf" title={`Confidence ${doc.confidence.toFixed(2)}${threshold != null ? `, threshold ${threshold}` : ''}`}>
+      <span className={`bar ${low ? 'low' : ''}`}><i style={{ width: `${pct(doc.confidence)}%` }} />
+        {threshold != null && <b className="tick" style={{ left: `${pct(threshold)}%` }} />}</span>
       <em>{pct(doc.confidence)}%</em>
     </span>
   );
