@@ -32,6 +32,6 @@ export const Type = ({ children }) => <span className="type">{children}</span>;
 export const Finding = ({ f }) => (
   <div className={`note ${f.severity === 'high' ? 'high' : ''}`}>
     <div className="nh"><span className="sev">{f.severity}</span><span>{flagTitle(f.id)}</span></div>
-    {f.message}<em> — {f.blocks_filing ? 'blocks filing' : 'files anyway'}</em>
+    {f.message}<em> ({f.blocks_filing ? 'blocks filing' : 'files anyway'})</em>
   </div>
 );

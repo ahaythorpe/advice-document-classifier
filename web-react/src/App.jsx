@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './atoms.jsx';
 import Inspector from './Inspector.jsx';
+import Tour, { STEPS as TOUR } from './Tour.jsx';
 import { Overview, Events, Review, Tree, About } from './views.jsx';
 import { DATA, PROFILES, statusOf, initials } from './model.js';
 
@@ -38,6 +39,7 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [decisions, setDecisions] = useState({});      // in memory only: the demo stores nothing
   const [theme, setTheme] = useTheme();
+  const [tour, setTour] = useState(null);           // step index while the tour is open
   const wide = useWide();
   const scrollRef = useRef(null);
 
@@ -58,7 +60,7 @@ export default function App() {
   useEffect(() => {
     const on = (e) => {
       if (e.target.closest && e.target.closest('select')) return;
-      if (e.key === 'Escape') setSelected(null);
+      if (e.key === 'Escape') { setSelected(null); setTour(null); }
       if (selected && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); step(e.key === 'ArrowDown' ? 1 : -1); }
     };
     document.addEventListener('keydown', on);
@@ -71,6 +73,14 @@ export default function App() {
   }, [selected]);
 
   const go = (v) => { location.hash = v; };
+  const tourTo = (i) => {
+    const s = TOUR[i];
+    setTour(i);
+    go(s.view);
+    const pick = s.select && s.select(d);
+    setSelected(pick ? pick.doc_id : null);
+  };
+  const endTour = () => { setTour(null); setSelected(null); };
   const decide = (k) => setDecisions((m) => ({ ...m, [selected]: m[selected] === k ? undefined : k }));
   const showInspector = WITH_INSPECTOR.includes(view) && (doc || wide);
 
@@ -124,6 +134,7 @@ export default function App() {
             <div key={c} className="client"><span className="av">{initials(c)}</span>{c}<span className="count">{perClient[c]}</span></div>
           ))}
           <h6>Help</h6>
+          <button className="nav" onClick={() => tourTo(0)}><Icon id="play" />Take the tour</button>
           <a className="nav" href="#about" aria-current={view === 'about' ? 'page' : undefined}><Icon id="info" />About</a>
           <div className="foot">
             <b>{d.batch.auto_filed} of {n} proposed</b>
@@ -154,7 +165,7 @@ export default function App() {
             </div>
 
             <div className="scroll" ref={scrollRef}>
-              <section className="view" hidden={view !== 'overview'}><Overview d={d} go={go} /></section>
+              <section className="view" hidden={view !== 'overview'}><Overview d={d} go={go} startTour={() => tourTo(0)} /></section>
               <section className="view" hidden={view !== 'events'}><Events {...viewProps} /></section>
               <section className="view" hidden={view !== 'review'}><Review {...viewProps} /></section>
               <section className="view" hidden={view !== 'tree'}><Tree {...viewProps} /></section>
@@ -163,7 +174,7 @@ export default function App() {
               <footer>
                 <span className="kb"><Icon id="shield" /><span>Knowledge base v{d.knowledge_base_version}</span></span> · Australia, Corporations Act 2001, ASIC.
                 Not legal advice.<br />
-                Changing the filing scheme changes the folders and nothing else — the
+                Changing the filing scheme changes the folders and nothing else. The
                 classification, the advice events and the findings are identical. That is what
                 lets the tool fit a firm’s existing system instead of replacing it.
               </footer>
@@ -176,6 +187,8 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {tour !== null && <Tour step={tour} onStep={tourTo} onClose={endTour} />}
     </div>
   );
 }

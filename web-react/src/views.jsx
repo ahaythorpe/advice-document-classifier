@@ -5,7 +5,7 @@ import {
 } from './model.js';
 
 /* ---------------------------------------------------------------- Overview */
-export function Overview({ d, go }) {
+export function Overview({ d, go, startTour }) {
   const high = highFindings(d);
   const clients = new Set(d.events.map((e) => e.client)).size;
   const stats = [
@@ -19,8 +19,9 @@ export function Overview({ d, go }) {
       <p className="eyebrow">Sample client folder · {d.batch.documents} files</p>
       <h1>A messy client folder in, a proposed filing out</h1>
       <p className="lede">For each document the tool decides what it is, which client and which{' '}
-        <em>advice event</em> it belongs to, and proposes where to file it — or
-        refuses, and says why. It never files silently.</p>
+        <em>advice event</em> it belongs to, and proposes where to file it, or
+        refuses and says why. It never files silently.</p>
+      <button className="btn primary tour-cta" onClick={startTour}><Icon id="play" />Take the 1-minute tour</button>
       <div className="stats">
         {stats.map((t) => (
           <button key={t.l} className={`stat ${t.c || ''}`} onClick={() => go(t.to)}>
@@ -53,7 +54,7 @@ function DocRow({ x, selected, onSelect }) {
         </div>
       </td>
       <td className="col-type"><Type>{x.type_label}</Type></td>
-      <td className="col-client">{x.client || '—'}</td>
+      <td className="col-client">{x.client || 'none'}</td>
       <td className="col-conf"><Confidence doc={x} /></td>
       <td className="col-status"><StatusBadge doc={x} /></td>
     </tr>
@@ -175,7 +176,7 @@ export function Tree({ d, selected, onSelect }) {
   return (
     <div className="tree-wrap">
       <div className="box sub tree-note"><Icon id="info" />
-        <span><b>{d.profile_name}</b> — {d.profile_description}</span></div>
+        <span><b>{d.profile_name}.</b> {d.profile_description}</span></div>
       {/* key on the profile so folders re-open when the scheme changes */}
       <div className="box tree" key={d.filing_profile}><Branch node={folderTree(d)} selected={selected} onSelect={onSelect} /></div>
     </div>
@@ -194,6 +195,21 @@ const STEPS = [
 export function About({ whyLocal }) {
   return (
     <div className="pad about">
+      <p className="eyebrow">Why I built this</p>
+      <h1>Big advice software is clunky and expensive</h1>
+      <div className="box why">
+        <p>Working around Australian advice firms, I kept hearing the same thing: the big
+          platforms are clunky, expensive, and built for large licensees. Most practices are
+          small, around two or three advisers, and they still file client documents by hand.</p>
+        <p>Those platforms <em>store</em> documents. None of them <em>reads</em> one and says
+          “this is an ROA for this client, from this piece of advice”. When a record is filed in
+          the wrong place, the firm loses time and carries a compliance risk, because it has to
+          be able to produce the right document when asked.</p>
+        <p>So this is deliberately small. It does one job, sits on top of the system a firm
+          already uses instead of replacing it, runs on the firm’s own computer, and leaves every
+          decision with a person.</p>
+      </div>
+
       <p className="eyebrow">How it works</p>
       <h1>Five steps, and the last one is always a person</h1>
       <ol className="steps">
@@ -206,7 +222,7 @@ export function About({ whyLocal }) {
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>
-        <p>Changing the filing scheme changes the folders and nothing else — the classification, the advice events and the findings are identical. That is what lets the tool fit a firm’s existing system instead of replacing it.</p>
+        <p>Changing the filing scheme changes the folders and nothing else. The classification, the advice events and the findings are identical. That is what lets the tool fit a firm’s existing system instead of replacing it.</p>
       </div>
     </div>
   );
