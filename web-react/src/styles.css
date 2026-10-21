@@ -191,8 +191,7 @@ h1{font-size:26px;line-height:1.2;letter-spacing:-.024em;margin:0 0 10px;font-we
 .conf{display:inline-flex;align-items:center;gap:8px}
 .conf em{font-style:normal;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
 .bar{width:56px;height:5px;border-radius:3px;background:var(--hair);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--ok);border-radius:3px}
-.bar.warn i{background:var(--warn)} .bar.bad i{background:var(--bad)}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
 
 /* ================================================================ table */
 .table{width:100%;border-collapse:collapse}

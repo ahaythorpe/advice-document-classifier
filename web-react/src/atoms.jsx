@@ -14,10 +14,9 @@ export const FileIcon = ({ doc }) => (
 );
 
 export const Confidence = ({ doc }) => {
-  const s = statusOf(doc);
   return (
     <span className="conf" title={`Confidence ${doc.confidence.toFixed(2)}`}>
-      <span className={`bar ${cls(s)}`}><i style={{ width: `${pct(doc.confidence)}%` }} /></span>
+      <span className="bar"><i style={{ width: `${pct(doc.confidence)}%` }} /></span>
       <em>{pct(doc.confidence)}%</em>
     </span>
   );
