@@ -39,6 +39,9 @@ calibration*.json
 web/
 .vercel/
 
+# The React source's dependencies. Its dist/ is handled at the end of this file.
+web-react/node_modules/
+
 # =============================================================================
 # Ordinary Python noise
 # =============================================================================
@@ -67,3 +70,9 @@ htmlcov/
 .vscode/
 *.swp
 *~
+
+# web-react/dist/index.html is the committed template build_web.py reads, so it
+# is let back in after the generic dist/ rule above; the sample preview is not.
+!web-react/dist/
+web-react/dist/*
+!web-react/dist/index.html

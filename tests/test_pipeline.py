@@ -236,9 +236,9 @@ class TestPlacement(SharedRun):
 
     def test_event_folder_follows_the_naming_pattern(self):
         folders = set("/".join(p.folder) for p in self.result.plan.files)
-        self.assertIn("Nguyen/2024-03 — Retirement & Super Consolidation [SOA]",
+        self.assertIn("Nguyen/2024-03 - Retirement & Super Consolidation [SOA]",
                       folders)
-        self.assertIn("Nguyen/2025-09 — Insurance [ROA · further advice]", folders)
+        self.assertIn("Nguyen/2025-09 - Insurance [ROA · further advice]", folders)
 
     def test_licensee_material_is_not_an_orphan(self):
         record = self.by_name["scan_001.pdf"]
