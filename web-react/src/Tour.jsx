@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const soa = (d) => d.documents.find((x) => x.type_label === 'SOA');
 
@@ -29,7 +29,7 @@ export const STEPS = [
   {
     view: 'events', target: '.insp-foot', select: soa,
     title: 'A person decides',
-    body: 'Nothing is filed until someone presses Approve. Try it: in this demo nothing is saved.',
+    body: 'Nothing is filed until a person approves. Confident ones are approved together at the top of the page. Held or flagged ones are decided here.',
   },
   {
     view: 'events', target: 'a.nav[href="#review"]', click: true,
@@ -80,20 +80,20 @@ function useRect(selector) {
 }
 
 // Beside the target if there is room, otherwise below or above it, always on screen.
-function place(rect) {
+function place(rect, h) {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const w = Math.min(CARD, vw - 32);
-  if (!rect) return { left: (vw - w) / 2, top: vh - 220, width: w };
+  if (!rect) return { left: (vw - w) / 2, top: vh - h - 20, width: w };
   const clampX = (x) => Math.max(16, Math.min(x, vw - w - 16));
-  const clampY = (y) => Math.max(16, Math.min(y, vh - 200));
+  const clampY = (y) => Math.max(16, Math.min(y, vh - h - 16));
   if (rect.left + rect.width + PAD + 16 + w < vw && rect.height < vh / 2) {
     return { left: rect.left + rect.width + PAD + 14, top: clampY(rect.top - 4), width: w };
   }
-  if (rect.top + rect.height + PAD + 210 < vh) {
+  if (rect.top + rect.height + PAD + h + 16 < vh) {
     return { left: clampX(rect.left), top: rect.top + rect.height + PAD + 12, width: w };
   }
-  return { left: clampX(rect.left), top: clampY(rect.top - PAD - 200), width: w };
+  return { left: clampX(rect.left), top: clampY(rect.top - PAD - 12 - h), width: w };
 }
 
 export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
@@ -116,7 +116,11 @@ export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
     return () => document.removeEventListener('click', on, true);
   });
 
-  const pos = place(rect);
+  // The card's real height, so a step with more text is still placed clear of its target.
+  const card = useRef(null);
+  const [h, setH] = useState(200);
+  useLayoutEffect(() => { if (card.current && card.current.offsetHeight !== h) setH(card.current.offsetHeight); });
+  const pos = place(rect, h);
   // Phones pin the card to the bottom edge; when the spotlit element is in the
   // lower half it moves to the top so it never covers what it describes.
   const low = rect && rect.top + rect.height / 2 > window.innerHeight / 2;
@@ -127,7 +131,7 @@ export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
           top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2,
         }} />
       )}
-      <div className={`tour ${low ? 'low' : ''}`} role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
+      <div className={`tour ${low ? 'low' : ''}`} ref={card} role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
         <div className="tour-head">
           <span className="tour-n">{step + 1} of {STEPS.length}</span>
         </div>

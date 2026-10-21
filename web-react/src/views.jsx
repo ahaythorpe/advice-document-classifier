@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Icon, Dot, FileIcon, Confidence, StatusBadge, Type } from './atoms.jsx';
 import {
-  FILTERS, groupByEvent, groupByStatus, folderTree, countFiles, highFindings, statusOf, initials, plural, flagTitle, cls, pct,
+  FILTERS, batchable, BATCH_LEVELS, groupByEvent, groupByStatus, folderTree, countFiles, highFindings, statusOf, initials, plural, flagTitle, cls, pct,
 } from './model.js';
 
 /* ---------------------------------------------------------------- Overview */
@@ -46,7 +46,7 @@ export function Overview({ d, go, startTour }) {
 }
 
 /* ---------------------------------------------------------------- Advice events */
-function DocRow({ x, selected, onSelect, threshold }) {
+function DocRow({ x, selected, onSelect, threshold, decision }) {
   return (
     <tr className="doc" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} data-doc={x.doc_id}>
       <td>
@@ -57,13 +57,38 @@ function DocRow({ x, selected, onSelect, threshold }) {
       <td className="col-type"><Type>{x.type_label}</Type></td>
       <td className="col-client">{x.client || 'none'}</td>
       <td className="col-conf"><Confidence doc={x} threshold={threshold} /></td>
-      <td className="col-status"><StatusBadge doc={x} /></td>
+      <td className="col-status">{decision ? <Decided k={decision} /> : <StatusBadge doc={x} />}</td>
       <td className="col-why">
         <button className="why-btn" title="Why it was filed here, and how sure the tool is"
           onClick={(e) => { e.stopPropagation(); onSelect(x.doc_id); }}>
           <Icon id="info" /><span className="lbl">Why?</span></button>
       </td>
     </tr>
+  );
+}
+
+export const Decided = ({ k }) => (
+  <span className={`badge ${k === 'approve' ? 'filed' : 'bad'}`}><Icon id={k === 'approve' ? 'check' : 'x'} />
+    {k === 'approve' ? 'Filed (demo)' : 'Rejected'}</span>
+);
+
+function BatchBar({ d, decisions, onBatch }) {
+  const [level, setLevel] = useState(BATCH_LEVELS[0]);
+  const ready = d.documents.filter((x) => batchable(x) && x.confidence >= level && !decisions[x.doc_id]);
+  const oneByOne = d.documents.filter((x) => !batchable(x) && !decisions[x.doc_id]).length;
+  return (
+    <div className="batch">
+      <div className="batch-tx">
+        <b>Approve the confident ones together</b>
+        <span>Placed, nothing held and nothing to check, at or above
+          <span className="select inline"><select aria-label="Confidence level" value={level} onChange={(e) => setLevel(+e.target.value)}>
+            {BATCH_LEVELS.map((l) => <option key={l} value={l}>{pct(l)}%</option>)}
+          </select><Icon id="down" /></span>.
+          {oneByOne > 0 && <> {plural(oneByOne, 'other needs', 'others need')} a person one by one.</>}</span>
+      </div>
+      <button className="btn primary" disabled={!ready.length} onClick={() => onBatch(ready.map((x) => x.doc_id), level)}>
+        <Icon id="check" />{ready.length ? `Approve and file ${ready.length}` : 'Nothing left to batch'}</button>
+    </div>
   );
 }
 
@@ -83,7 +108,7 @@ const STATUS_META = {
   Confident: 'nothing to check',
 };
 
-export function Events({ d, selected, onSelect }) {
+export function Events({ d, selected, onSelect, decisions, onBatch }) {
   const [filter, setFilter] = useState('all');
   const [by, setBy] = useState('event');
   const keep = FILTERS.find((f) => f.key === filter).test;
@@ -91,9 +116,10 @@ export function Events({ d, selected, onSelect }) {
   const byStatus = groupByStatus(d, keep);
   const empty = !groups.length && !loose.length;
   const t = d.confidence_threshold;
-  const row = (x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} threshold={t} />;
+  const row = (x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} threshold={t} decision={decisions[x.doc_id]} />;
   return (
     <>
+      <BatchBar d={d} decisions={decisions} onBatch={onBatch} />
       <div className="tabs" role="tablist">
         {FILTERS.map((f) => (
           <button key={f.key} className="tab" role="tab" aria-selected={filter === f.key} onClick={() => setFilter(f.key)}>
@@ -177,8 +203,46 @@ export function Review({ d, selected, onSelect }) {
   );
 }
 
+/* ---------------------------------------------------------------- Filing log */
+// Every approval, newest first, grouped by the click that made it. Nothing is
+// deleted: an undone batch stays in the log, marked undone.
+export function Log({ d, log, selected, onSelect, onUndo }) {
+  const byId = Object.fromEntries(d.documents.map((x) => [x.doc_id, x]));
+  return (
+    <div className="pad log">
+      <p className="intro-line">Every approval, grouped by the click that made it. Open a document to see why it was filed there.
+        In this demo the log lives in this browser tab only.</p>
+      {!log.length && <div className="box sub empty">Nothing filed yet. Approve the confident ones on Advice events, or decide one at a time in a document’s panel.</div>}
+      {log.slice().reverse().map((e) => (
+        <div key={e.id} className={`box log-entry ${e.undone ? 'undone' : ''}`}>
+          <div className="log-head">
+            <b>{e.kind === 'batch' ? `Batch: ${plural(e.ids.length, 'document', 'documents')} at or above ${pct(e.level)}%` : `${e.decision === 'approve' ? 'Approved' : 'Rejected'} one by one`}</b>
+            <span className="m">{e.at}{e.undone ? ' · undone' : ''}</span>
+            <span className="grow" />
+            {!e.undone && <button className="link-btn" onClick={() => onUndo(e.id)}>Undo</button>}
+          </div>
+          <ul>
+            {e.ids.map((id) => {
+              const x = byId[id];
+              return x && (
+                <li key={id}>
+                  <button className="log-doc" aria-selected={selected === id} data-doc={id} onClick={() => onSelect(id)}>
+                    <span className="nm"><b>{x.source_name}</b><Type>{x.type_label}</Type><span className="pc">{pct(x.confidence)}%</span></span>
+                    <span className="to">{e.decision === 'approve' ? <>&rarr; {(x.destination || {}).path}</> : 'not filed'}</span>
+                    <span className="why">{(x.destination || {}).rationale || x.attachment_reason}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------------- Folder tree */
-function Folder({ name, node, selected, onSelect }) {
+function Folder({ name, node, selected, onSelect, decisions }) {
   const [open, setOpen] = useState(true);
   return (
     <li className={open ? '' : 'closed'}>
@@ -186,25 +250,26 @@ function Folder({ name, node, selected, onSelect }) {
         <span className="tw"><Icon id="down" /></span><span className="fo"><Icon id="folder" /></span>
         <span className="nm">{name}</span><span className="ct">{countFiles(node)}</span>
       </button>
-      <Branch node={node} selected={selected} onSelect={onSelect} />
+      <Branch node={node} selected={selected} onSelect={onSelect} decisions={decisions} />
     </li>
   );
 }
 
-function Branch({ node, selected, onSelect }) {
+function Branch({ node, selected, onSelect, decisions }) {
   const files = node.files.slice().sort((a, b) =>
     ((a.destination || {}).filename || '').localeCompare((b.destination || {}).filename || ''));
   return (
     <ul className="tn">
       {Object.keys(node.dirs).sort().map((k) => (
-        <Folder key={k} name={k} node={node.dirs[k]} selected={selected} onSelect={onSelect} />
+        <Folder key={k} name={k} node={node.dirs[k]} selected={selected} onSelect={onSelect} decisions={decisions} />
       ))}
       {files.map((x) => (
         <li key={x.doc_id}>
           <button className="tr" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} title={x.source_name} data-doc={x.doc_id}>
             <span className="fl"><Icon id="file" /></span>
             <span className="nm">{(x.destination || {}).filename || x.source_name}</span>
-            <span className="ty"><Type>{x.type_label}</Type><i className={`dot ${cls(statusOf(x))}`} /></span>
+            <span className="ty">{decisions[x.doc_id] === 'approve' && <span className="filed-tag"><Icon id="check" />Filed</span>}
+              <Type>{x.type_label}</Type><i className={`dot ${cls(statusOf(x))}`} /></span>
           </button>
         </li>
       ))}
@@ -212,13 +277,13 @@ function Branch({ node, selected, onSelect }) {
   );
 }
 
-export function Tree({ d, selected, onSelect }) {
+export function Tree({ d, selected, onSelect, decisions }) {
   return (
     <div className="tree-wrap">
       <div className="box sub tree-note"><Icon id="info" />
         <span><b>{d.profile_name}.</b> {d.profile_description}</span></div>
       {/* key on the profile so folders re-open when the scheme changes */}
-      <div className="box tree" key={d.filing_profile}><Branch node={folderTree(d)} selected={selected} onSelect={onSelect} /></div>
+      <div className="box tree" key={d.filing_profile}><Branch node={folderTree(d)} selected={selected} onSelect={onSelect} decisions={decisions} /></div>
     </div>
   );
 }

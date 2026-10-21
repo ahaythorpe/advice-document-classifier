@@ -48,6 +48,11 @@ export function groupByStatus(d, keep) {
   return STATUS_ORDER.filter((k) => by[k]).map((label) => ({ label, docs: by[label] }));
 }
 
+// Only these can be approved together: placed, nothing held, nothing to check.
+// Anything flagged waits for a person one by one, however confident.
+export const batchable = (x) => !x.needs_review && !x.flags.length && !!(x.destination || {}).path;
+export const BATCH_LEVELS = [0.7, 0.8, 0.9];   // first is the default
+
 export function groupByEvent(d, keep) {
   const byEvent = {};
   const loose = [];

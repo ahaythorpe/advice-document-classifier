@@ -3,13 +3,14 @@ import { Icon } from './atoms.jsx';
 import Inspector from './Inspector.jsx';
 import Tour, { STEPS as TOUR } from './Tour.jsx';
 import Welcome from './Welcome.jsx';
-import { Overview, Events, Review, Tree, About } from './views.jsx';
-import { DATASETS, SETS, PROFILES, statusOf, initials } from './model.js';
+import Filed from './Filed.jsx';
+import { Overview, Events, Review, Tree, Log, About } from './views.jsx';
+import { DATASETS, SETS, PROFILES, statusOf, initials, plural } from './model.js';
 
 const REPO = 'https://github.com/ahaythorpe/advice-document-classifier';
 const WHY_LOCAL = `${REPO}/blob/main/docs/DEPLOYMENT.md`;
-const VIEWS = { overview: 'Overview', events: 'Advice events', review: 'Needs review', tree: 'Folder tree', about: 'About' };
-const WITH_INSPECTOR = ['events', 'review', 'tree'];
+const VIEWS = { overview: 'Overview', events: 'Advice events', review: 'Needs review', tree: 'Folder tree', log: 'Filing log', about: 'About' };
+const WITH_INSPECTOR = ['events', 'review', 'tree', 'log'];
 
 // The welcome popup shows once per browser; storage is optional, so it may show again.
 const welcomed = () => { try { return localStorage.getItem('welcomed') === '1'; } catch { return false; } };
@@ -48,6 +49,8 @@ export default function App() {
   const [theme, setTheme] = useTheme();
   const [tour, setTour] = useState(null);           // step index while the tour is open
   const [welcome, setWelcome] = useState(() => !welcomed());
+  const [log, setLog] = useState([]);               // the filing log: in memory only, like decisions
+  const [filed, setFiled] = useState(null);         // doc ids of the last batch, while its popup is open
   const wide = useWide();
   const scrollRef = useRef(null);
 
@@ -68,7 +71,7 @@ export default function App() {
   useEffect(() => {
     const on = (e) => {
       if (e.target.closest && e.target.closest('select')) return;
-      if (e.key === 'Escape') { setSelected(null); setTour(null); if (welcome) closeWelcome(); }
+      if (e.key === 'Escape') { setSelected(null); setTour(null); setFiled(null); if (welcome) closeWelcome(); }
       if (selected && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); step(e.key === 'ArrowDown' ? 1 : -1); }
     };
     document.addEventListener('keydown', on);
@@ -91,7 +94,26 @@ export default function App() {
   };
   const endTour = () => { setTour(null); setSelected(null); };
   const closeWelcome = () => { markWelcomed(); setWelcome(false); };
-  const decide = (k) => setDecisions((m) => ({ ...m, [selected]: m[selected] === k ? undefined : k }));
+  const now = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const record = (e) => setLog((l) => [...l, { id: l.length + 1, at: now(), ...e }]);
+  const approveBatch = (ids, level) => {
+    setDecisions((m) => ({ ...m, ...Object.fromEntries(ids.map((id) => [id, 'approve'])) }));
+    record({ kind: 'batch', level, ids, decision: 'approve' });
+    setFiled(ids);
+  };
+  // Undo clears the decisions that entry made and marks it undone; the log keeps it.
+  const undoEntry = (id) => {
+    const e = log.find((x) => x.id === id);
+    if (!e) return;
+    setDecisions((m) => { const n = { ...m }; e.ids.forEach((d0) => { if (n[d0] === e.decision) delete n[d0]; }); return n; });
+    setLog((l) => l.map((x) => (x.id === id ? { ...x, undone: true } : x)));
+  };
+  const undoBatch = () => { const last = log[log.length - 1]; if (last) undoEntry(last.id); setFiled(null); };
+  const decide = (k) => {
+    const same = decisions[selected] === k;
+    setDecisions((m) => ({ ...m, [selected]: same ? undefined : k }));
+    if (!same) record({ kind: 'single', ids: [selected], decision: k });
+  };
   const showInspector = WITH_INSPECTOR.includes(view) && (doc || wide);
 
   const perClient = {};
@@ -99,8 +121,8 @@ export default function App() {
   const n = d.batch.documents;
   const ok = d.documents.filter((x) => statusOf(x) === 'ok').length;
   const warn = d.documents.filter((x) => statusOf(x) === 'warn').length;
-  const sub = { events: `${d.events.length} events · ${n} documents`, review: `${d.batch.needs_review} held`, tree: 'Proposed filing' }[view] || '';
-  const viewProps = { d, selected, onSelect: setSelected };
+  const sub = { log: plural(log.filter((e) => !e.undone).length, 'entry', 'entries'), events: `${d.events.length} events · ${n} documents`, review: `${d.batch.needs_review} held`, tree: 'Proposed filing' }[view] || '';
+  const viewProps = { d, selected, onSelect: setSelected, decisions, onBatch: approveBatch };
 
   return (
     <div className="window" role="application" aria-label="Advice Document Filing (demo only)">
@@ -142,7 +164,7 @@ export default function App() {
             ))}
           </>}
           <h6>Batch</h6>
-          {[['overview', 'grid'], ['events', 'layers', d.events.length], ['review', 'alert', d.batch.needs_review, 'warn'], ['tree', 'folder', n]].map(([v, ic, count, c]) => (
+          {[['overview', 'grid'], ['events', 'layers', d.events.length], ['review', 'alert', d.batch.needs_review, 'warn'], ['tree', 'folder', n], ['log', 'check', log.filter((e) => !e.undone).length]].map(([v, ic, count, c]) => (
             <a key={v} className="nav" href={`#${v}`} aria-current={view === v ? 'page' : undefined}>
               <Icon id={ic} />{VIEWS[v]}
               {count ? <span className={`count ${c || ''}`}>{count}</span> : null}
@@ -189,6 +211,7 @@ export default function App() {
               <section className="view" hidden={view !== 'events'}><Events {...viewProps} /></section>
               <section className="view" hidden={view !== 'review'}><Review {...viewProps} /></section>
               <section className="view" hidden={view !== 'tree'}><Tree {...viewProps} /></section>
+              <section className="view" hidden={view !== 'log'}><Log {...viewProps} log={log} onUndo={undoEntry} /></section>
               <section className="view" hidden={view !== 'about'}><About whyLocal={WHY_LOCAL} /></section>
 
               <footer>
@@ -211,10 +234,12 @@ export default function App() {
       {tour !== null && <Tour d={d} step={tour} onStep={tourTo} onClose={endTour}
         onBackToStart={() => { endTour(); setWelcome(true); }} />}
       {/* Hidden while a narrow screen's document panel is open: it would sit on Reject. */}
-      {tour === null && !welcome && !(showInspector && !wide) && (
+      {tour === null && !welcome && !filed && !(showInspector && !wide) && (
         <button className="fab" title="How it works and the tour" aria-label="How it works and the tour"
           onClick={() => setWelcome(true)}><span aria-hidden="true">👋</span></button>
       )}
+      {filed && <Filed docs={d.documents.filter((x) => filed.includes(x.doc_id))}
+        onUndo={undoBatch} onClose={() => setFiled(null)} onLog={() => { setFiled(null); go('log'); }} />}
       {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); tourTo(0); }} />}
     </div>
   );
