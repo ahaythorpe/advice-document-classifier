@@ -295,7 +295,7 @@ h1{font-size:26px;line-height:1.2;letter-spacing:-.024em;margin:0 0 10px;font-we
 .batch-tx b{color:var(--fg);font-size:13px}
 .batch .btn{flex:none;display:inline-flex;align-items:center;gap:7px}
 .batch .btn:disabled{opacity:.5;cursor:default}
-.select.inline{display:inline-flex;position:relative;margin:0 2px 0 5px;vertical-align:middle}
+.select.inline{display:inline-flex;position:relative;margin:0 0 0 5px;vertical-align:middle}
 .select.inline select{appearance:none;border:1px solid var(--line);background:var(--sheet);color:var(--fg);border-radius:6px;padding:1px 20px 1px 7px;font-size:12px;cursor:pointer}
 .select.inline svg.i{position:absolute;right:4px;top:50%;width:12px;height:12px;transform:translateY(-50%);pointer-events:none}
 .badge.filed{background:var(--accentbg);color:var(--accent)}

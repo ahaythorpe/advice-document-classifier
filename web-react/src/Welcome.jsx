@@ -6,8 +6,9 @@ const HOW = [
   ['Read', 'pulls the text from each document'],
   ['Identify', 'works out the type, client and advice event'],
   ['Check', 'raises compliance flags'],
-  ['Propose', 'suggests a folder and file name'],
-  ['Ask a person', 'nothing is filed until someone approves'],
+  ['Propose', 'suggests a folder: the client then the advice event'],
+  ['File', 'the confident ones in one click and the rest by a person'],
+  ['Log', 'every filing is recorded and can be undone'],
 ];
 
 const NOT = [

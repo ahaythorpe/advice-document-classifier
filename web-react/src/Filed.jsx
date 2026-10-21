@@ -25,8 +25,8 @@ export default function Filed({ docs, onUndo, onLog, onClose }) {
           ))}
         </div>
         <ul className="welcome-not">
-          <li><Icon id="lock" /><span><b>In the desktop app</b> this step moves each file into the firm’s own
-            folder on its own computer, renamed as shown. Nothing leaves that computer.</span></li>
+          <li><Icon id="lock" /><span><b>As designed</b> this step would move each file into the firm’s own
+            folders on its own computer, renamed as shown. Nothing would leave that computer.</span></li>
           <li><Icon id="shield" /><span><b>In this demo</b> nothing is written anywhere. It lives in this browser tab
             and is gone when you close it.</span></li>
         </ul>

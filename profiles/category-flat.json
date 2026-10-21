@@ -1,7 +1,7 @@
 {
   "id": "category-flat",
-  "name": "Client folder with document categories",
-  "description": "One folder per client, subdivided by document category rather than by advice event. This is how most practice-management systems (Xplan, AdviserLogic, Practifi, Virtual Cabinet) organise a client file, so it is the profile to start from when filing into one. Advice events are still computed and still drive the flags and the event links. They are recorded in the manifest rather than in the folder path, so nothing is lost; it is just not expressed as folders.",
+  "name": "Client, then document type",
+  "description": "One folder per client split by kind of document. This is how most practice software sets out a client file. The advice each document belongs to is still worked out. It just does not show as folders.",
   "charset": "unicode",
   "max_path_chars": 260,
   "max_name_chars": 120,

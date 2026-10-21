@@ -1,7 +1,7 @@
 {
   "id": "nested-default",
-  "name": "Nested (client outer / advice event inner)",
-  "description": "The scheme SYSTEM.md section 5 recommends. Best accuracy, because a document is placed by two axes that must agree. Use this unless the firm's existing system dictates otherwise.",
+  "name": "Client, then advice event",
+  "description": "Each client has a folder. Inside it is one folder for each advice event with every document that belongs to it. A document is placed by two checks that must agree: the right client and the right advice event.",
   "charset": "unicode",
   "max_path_chars": 260,
   "max_name_chars": 120,

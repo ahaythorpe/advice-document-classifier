@@ -1,7 +1,7 @@
 {
   "id": "preserve-original",
-  "name": "Nested, original filenames kept",
-  "description": "Same folders as nested-default but the original filename is appended to every proposal. For firms whose registers, emails or audit trails cite documents by their existing name, where a clean rename would break the reference.",
+  "name": "Client, then advice event, old names kept",
+  "description": "The same folders with the original file name added to the end. For firms whose registers or emails refer to files by their old name.",
   "charset": "unicode",
   "max_path_chars": 260,
   "max_name_chars": 150,

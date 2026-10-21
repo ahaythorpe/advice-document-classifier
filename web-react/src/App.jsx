@@ -132,7 +132,6 @@ export default function App() {
         <div className="lights" aria-hidden="true"><i /><i /><i /></div>
         <span className="appmark" aria-hidden="true"><Icon id="cabinet" /></span>
         <span className="appname">Advice Document Filing</span>
-        <span className="tb-demo">Demo</span>
         <span className="pill" title="An early demo to show the idea."><Icon id="info" /><span className="lbl">Prototype</span></span>
         <span className="grow" />
         <a className="tb-link" href={REPO}><Icon id="code" />Source</a>
@@ -179,13 +178,13 @@ export default function App() {
           <button className="nav" onClick={() => setWelcome(true)}><Icon id="shield" />Disclaimers</button>
           <a className="nav" href="#about" aria-current={view === 'about' ? 'page' : undefined}><Icon id="info" />About</a>
           <div className="foot">
-            <b>{d.batch.auto_filed} of {n} proposed</b>
+            <b>{ok} of {n} ready to file</b>
             <div className="meter">
               <i style={{ width: `${ok / n * 100}%`, background: 'var(--ok)' }} />
               <i style={{ width: `${warn / n * 100}%`, background: 'var(--warn)' }} />
               <i style={{ width: `${(n - ok - warn) / n * 100}%`, background: 'var(--bad)' }} />
             </div>
-            {d.batch.needs_review} held for review · threshold {d.confidence_threshold}
+            {d.batch.needs_review} held for review · line at {Math.round(d.confidence_threshold * 100)}%
           </div>
         </nav>
 

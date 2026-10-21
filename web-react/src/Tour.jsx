@@ -9,7 +9,7 @@ export const STEPS = [
   {
     view: 'overview', target: '.stats',
     title: 'A messy client folder',
-    body: 'Ten demo documents, scanned and named scan_001 to scan_010, the way they often arrive. The tool has read every one. These tiles sum up what it found.',
+    body: 'Ten demo documents, scanned and named scan_001 to scan_010 the way they often arrive. The tool has read every one. These tiles sum up what it found.',
   },
   {
     view: 'overview', target: 'a.nav[href="#events"]', click: true,
@@ -18,18 +18,18 @@ export const STEPS = [
   },
   {
     view: 'events', target: (d) => `.view:not([hidden]) tr[data-doc="${soa(d).doc_id}"]`, click: true,
-    title: 'Grouped by piece of advice',
+    title: 'Grouped by advice event',
     body: 'The fact find, risk profile, SOA and authority to proceed for one recommendation sit together. Click the SOA to see how the tool read it.',
   },
   {
     view: 'events', target: '.insp-body', select: soa,
     title: 'Why it was placed there',
-    body: 'The type, how confident the tool is, the words it found as evidence, anything worth checking and the folder it proposes.',
+    body: 'In short says how sure the tool is and why it chose this folder. The detail is underneath.',
   },
   {
-    view: 'events', target: '.insp-foot', select: soa,
-    title: 'A person decides',
-    body: 'Nothing is filed until a person approves. Confident ones are approved together at the top of the page. Held or flagged ones are decided here.',
+    view: 'events', target: '.view:not([hidden]) .batch',
+    title: 'File the confident ones in one click',
+    body: 'Everything above the line with nothing to check is filed together. You choose the line. Try it: nothing is saved.',
   },
   {
     view: 'events', target: 'a.nav[href="#review"]', click: true,
@@ -38,18 +38,23 @@ export const STEPS = [
   },
   {
     view: 'review', target: '.rv-list',
-    title: 'It refuses rather than guesses',
-    body: 'When the tool is not sure it holds the document for a person and says why. A wrongly filed client record is a compliance problem. The bar is certainty.',
+    title: 'It holds rather than guesses',
+    body: 'When the tool is not sure it holds the document and says why. A person approves or rejects each one. A wrongly filed client record is a compliance problem.',
   },
   {
-    view: 'tree', target: '.scheme',
-    title: 'Fits the firm’s own system',
-    body: 'This is the proposed folder tree. Switch the filing scheme here to match how a firm already organises its files: only the folders change, never the classification.',
+    view: 'review', target: 'a.nav[href="#log"]',
+    title: 'Every filing is logged',
+    body: 'The Filing log lists each batch with the reason for every document. Any of it can be undone.',
+  },
+  {
+    view: 'tree', target: '.view:not([hidden]) .tree .tn .tn > li > .tr',   // the first advice event folder
+    title: 'Client then advice event',
+    body: 'Each client has a folder with one folder per advice event inside. The stage shows on each document. A firm can switch to its own scheme above.',
   },
   {
     view: 'about', target: '.about .why',
     title: 'Why I built this',
-    body: 'Big advice software is clunky and expensive. None of it reads a document for you. This tool is small and sits on top of what a firm already uses.',
+    body: 'Big advice software is clunky and expensive. None of it reads a document for you. This is small and sits on top of what a firm already uses.',
   },
 ];
 
