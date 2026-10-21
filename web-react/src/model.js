@@ -39,6 +39,15 @@ export const FILTERS = [
   { key: 'findings', label: 'Worth checking', test: (x) => x.flags.length > 0 },
 ];
 
+// Most urgent first: what is held, then what to look at, then what is fine.
+export const STATUS_ORDER = ['Needs review', 'Worth checking', 'Note', 'Confident'];
+
+export function groupByStatus(d, keep) {
+  const by = {};
+  d.documents.filter(keep).forEach((x) => (by[statusLabel(x)] = by[statusLabel(x)] || []).push(x));
+  return STATUS_ORDER.filter((k) => by[k]).map((label) => ({ label, docs: by[label] }));
+}
+
 export function groupByEvent(d, keep) {
   const byEvent = {};
   const loose = [];

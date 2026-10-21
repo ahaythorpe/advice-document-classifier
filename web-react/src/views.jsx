@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Icon, Dot, FileIcon, Confidence, StatusBadge, Type } from './atoms.jsx';
 import {
-  FILTERS, groupByEvent, folderTree, countFiles, highFindings, statusOf, initials, plural, flagTitle, cls,
+  FILTERS, groupByEvent, groupByStatus, folderTree, countFiles, highFindings, statusOf, initials, plural, flagTitle, cls, pct,
 } from './model.js';
 
 /* ---------------------------------------------------------------- Overview */
@@ -46,7 +46,7 @@ export function Overview({ d, go, startTour }) {
 }
 
 /* ---------------------------------------------------------------- Advice events */
-function DocRow({ x, selected, onSelect }) {
+function DocRow({ x, selected, onSelect, threshold }) {
   return (
     <tr className="doc" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} data-doc={x.doc_id}>
       <td>
@@ -56,26 +56,42 @@ function DocRow({ x, selected, onSelect }) {
       </td>
       <td className="col-type"><Type>{x.type_label}</Type></td>
       <td className="col-client">{x.client || 'none'}</td>
-      <td className="col-conf"><Confidence doc={x} /></td>
+      <td className="col-conf"><Confidence doc={x} threshold={threshold} /></td>
       <td className="col-status"><StatusBadge doc={x} /></td>
+      <td className="col-why">
+        <button className="why-btn" title="Why it was filed here, and how sure the tool is"
+          onClick={(e) => { e.stopPropagation(); onSelect(x.doc_id); }}>
+          <Icon id="info" /><span className="lbl">Why?</span></button>
+      </td>
     </tr>
   );
 }
 
 function GroupRow({ avatar, title, meta, tag, count }) {
   return (
-    <tr className="grp"><td colSpan={5}><div className="grp-in">
+    <tr className="grp"><td colSpan={6}><div className="grp-in">
       {avatar}<b>{title}</b><span className="m">{meta}</span>{tag && <Type>{tag}</Type>}
       <span className="ct">{plural(count, 'document', 'documents')}</span>
     </div></td></tr>
   );
 }
 
+const STATUS_META = {
+  'Needs review': 'held, the tool will not file these',
+  'Worth checking': 'a compliance point for a person to look at',
+  Note: 'a minor point, can still be filed',
+  Confident: 'nothing to check',
+};
+
 export function Events({ d, selected, onSelect }) {
   const [filter, setFilter] = useState('all');
+  const [by, setBy] = useState('event');
   const keep = FILTERS.find((f) => f.key === filter).test;
   const { groups, loose } = groupByEvent(d, keep);
+  const byStatus = groupByStatus(d, keep);
   const empty = !groups.length && !loose.length;
+  const t = d.confidence_threshold;
+  const row = (x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} threshold={t} />;
   return (
     <>
       <div className="tabs" role="tablist">
@@ -84,26 +100,49 @@ export function Events({ d, selected, onSelect }) {
             {f.label}<b>{d.documents.filter(f.test).length}</b>
           </button>
         ))}
+        <span className="grow" />
+        <div className="seg" role="group" aria-label="Group by">
+          <span className="seg-l">Group by</span>
+          <button aria-pressed={by === 'event'} onClick={() => setBy('event')}>Advice event</button>
+          <button aria-pressed={by === 'status'} onClick={() => setBy('status')}>Status</button>
+        </div>
+      </div>
+      <div className="scale" role="note">
+        <span className="scale-l">Confidence scale</span>
+        <span className="scale-k">0%</span>
+        <span className="scale-bar" aria-hidden="true">
+          <i style={{ width: `${pct(t)}%` }} className="below" /><i className="above" />
+          <b className="tick" style={{ left: `${pct(t)}%` }} />
+        </span>
+        <span className="scale-k">100%</span>
+        <span className="scale-t">The line is {pct(t)}%. Below it the tool will not file the document and holds it for a person.</span>
+        <span className="scale-note">Confidence is how sure it is of the document type. Worth checking is separate: a compliance point for a person to look at, even at 100%.</span>
       </div>
       <table className="table">
-        <thead><tr><th>Name</th><th className="col-type">Type</th><th className="col-client">Client</th><th className="col-conf">Confidence</th><th className="col-status">Status</th></tr></thead>
+        <thead><tr><th>Name</th><th className="col-type">Type</th><th className="col-client">Client</th><th className="col-conf">Confidence</th><th className="col-status">Status</th><th className="col-why"><span className="sr">Explain</span></th></tr></thead>
         <tbody>
-          {groups.map(({ ev, docs }) => [
+          {by === 'status' && byStatus.map(({ label, docs }) => [
+            <GroupRow key={label}
+              avatar={<Dot s={statusOf(docs[0])} />}
+              title={label} meta={STATUS_META[label]} count={docs.length} />,
+            ...docs.map(row),
+          ])}
+          {by === 'event' && groups.map(({ ev, docs }) => [
             <GroupRow key={ev.event_id}
               avatar={<span className="av">{initials(ev.client)}</span>}
               title={ev.client}
               meta={`${ev.subject} · ${ev.date || 'undated'}${ev.sub_kind ? ' · ' + ev.sub_kind : ''}`}
               tag={ev.record_label} count={docs.length} />,
-            ...docs.map((x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} />),
+            ...docs.map(row),
           ])}
-          {loose.length > 0 && [
+          {by === 'event' && loose.length > 0 && [
             <GroupRow key="loose"
               avatar={<span className="av" style={{ background: 'var(--sel)', color: 'var(--mute)' }}><Icon id="folder" /></span>}
               title="Outside any advice event"
               meta="licensee material, client-level documents and anything not placed" count={loose.length} />,
-            ...loose.map((x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} />),
+            ...loose.map(row),
           ]}
-          {empty && <tr><td colSpan={5} className="empty">No documents match this filter.</td></tr>}
+          {empty && <tr><td colSpan={6} className="empty">No documents match this filter.</td></tr>}
         </tbody>
       </table>
     </>
