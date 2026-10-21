@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './atoms.jsx';
 import Inspector from './Inspector.jsx';
 import Tour, { STEPS as TOUR } from './Tour.jsx';
+import Welcome from './Welcome.jsx';
 import { Overview, Events, Review, Tree, About } from './views.jsx';
 import { DATA, PROFILES, statusOf, initials } from './model.js';
 
@@ -9,6 +10,10 @@ const REPO = 'https://github.com/ahaythorpe/advice-document-classifier';
 const WHY_LOCAL = `${REPO}/blob/main/docs/DEPLOYMENT.md`;
 const VIEWS = { overview: 'Overview', events: 'Advice events', review: 'Needs review', tree: 'Folder tree', about: 'About' };
 const WITH_INSPECTOR = ['events', 'review', 'tree'];
+
+// The welcome popup shows once per browser; storage is optional, so it may show again.
+const welcomed = () => { try { return localStorage.getItem('welcomed') === '1'; } catch { return false; } };
+const markWelcomed = () => { try { localStorage.setItem('welcomed', '1'); } catch { /* demo: storage optional */ } };
 
 const viewFromHash = () => (VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'overview');
 
@@ -40,6 +45,7 @@ export default function App() {
   const [decisions, setDecisions] = useState({});      // in memory only: the demo stores nothing
   const [theme, setTheme] = useTheme();
   const [tour, setTour] = useState(null);           // step index while the tour is open
+  const [welcome, setWelcome] = useState(() => !welcomed());
   const wide = useWide();
   const scrollRef = useRef(null);
 
@@ -60,7 +66,7 @@ export default function App() {
   useEffect(() => {
     const on = (e) => {
       if (e.target.closest && e.target.closest('select')) return;
-      if (e.key === 'Escape') { setSelected(null); setTour(null); }
+      if (e.key === 'Escape') { setSelected(null); setTour(null); if (welcome) closeWelcome(); }
       if (selected && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); step(e.key === 'ArrowDown' ? 1 : -1); }
     };
     document.addEventListener('keydown', on);
@@ -81,6 +87,7 @@ export default function App() {
     setSelected(pick ? pick.doc_id : null);
   };
   const endTour = () => { setTour(null); setSelected(null); };
+  const closeWelcome = () => { markWelcomed(); setWelcome(false); };
   const decide = (k) => setDecisions((m) => ({ ...m, [selected]: m[selected] === k ? undefined : k }));
   const showInspector = WITH_INSPECTOR.includes(view) && (doc || wide);
 
@@ -135,6 +142,7 @@ export default function App() {
           ))}
           <h6>Help</h6>
           <button className="nav" onClick={() => tourTo(0)}><Icon id="play" />Take the tour</button>
+          <button className="nav" onClick={() => setWelcome(true)}><Icon id="shield" />Disclaimers</button>
           <a className="nav" href="#about" aria-current={view === 'about' ? 'page' : undefined}><Icon id="info" />About</a>
           <div className="foot">
             <b>{d.batch.auto_filed} of {n} proposed</b>
@@ -189,6 +197,7 @@ export default function App() {
       </div>
 
       {tour !== null && <Tour step={tour} onStep={tourTo} onClose={endTour} />}
+      {welcome && <Welcome onClose={closeWelcome} onTour={() => { closeWelcome(); tourTo(0); }} />}
     </div>
   );
 }
