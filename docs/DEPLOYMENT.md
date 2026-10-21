@@ -100,6 +100,15 @@ template first:
 cd web-react && npm ci && npm run build && cd ..
 ```
 
+The live demo also carries a second sample set, built from the public sample
+PDFs (ASIC examples, blank templates, fund PDSs and synthetic mocks), which are
+not in git. Pass their folder to add it; the page gets the tool's results only,
+never the PDFs or their text:
+
+```bash
+python3 build_web.py --public-samples /path/to/samples
+```
+
 It is a **showcase with synthetic data only**:
 
 * the same interface, the same sample documents, no upload, no file writing;

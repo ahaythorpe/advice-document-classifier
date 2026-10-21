@@ -16,11 +16,12 @@ export function Overview({ d, go, startTour }) {
   ];
   return (
     <div className="pad">
-      <p className="eyebrow">Sample client folder · {d.batch.documents} files</p>
-      <h1>A messy client folder in, a proposed filing out</h1>
+      <p className="eyebrow">{d.dataset_label} · {d.batch.documents} files</p>
+      <h1>{d.dataset === 'public' ? 'Real published PDFs, and a tool that won’t guess' : 'A messy client folder in, a proposed filing out'}</h1>
       <p className="lede">For each document the tool decides what it is, which client and which{' '}
         <em>advice event</em> it belongs to, and proposes where to file it, or
         refuses and says why. It never files silently.</p>
+      {d.dataset === 'public' && <div className="box sub set-note"><Icon id="info" /><span>{d.dataset_note}</span></div>}
       <button className="btn primary tour-cta" onClick={startTour}><Icon id="play" />Take the 1-minute tour</button>
       <div className="stats">
         {stats.map((t) => (
@@ -50,7 +51,7 @@ function DocRow({ x, selected, onSelect }) {
     <tr className="doc" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} data-doc={x.doc_id}>
       <td>
         <div className="name"><FileIcon doc={x} />
-          <span style={{ minWidth: 0 }}><b>{x.source_name}</b><small>{x.date || 'undated'}</small></span>
+          <span style={{ minWidth: 0 }} title={x.source_name}><b>{x.source_name.split('/').pop()}</b><small>{x.date || 'undated'}</small></span>
         </div>
       </td>
       <td className="col-type"><Type>{x.type_label}</Type></td>
@@ -218,7 +219,7 @@ export function About({ whyLocal }) {
       <div className="box">
         <h3><Icon id="lock" />Why it runs locally</h3>
         <p>Client files are confidential. A hosted version of the tool would mean uploading them to somebody else’s computer, which is a data-residency decision for the licensee rather than a deployment choice.</p>
-        <p>So firms piloting the tool run it as a desktop app on their own computers, and confidential documents never leave the firm. This page is a demonstration on fabricated documents: it has no upload control because there is nowhere for one to go. <a href={whyLocal}>Why local&nbsp;&rarr;</a></p>
+        <p>So firms piloting the tool run it as a desktop app on their own computers, and confidential documents never leave the firm. This page is a demonstration on fabricated and publicly published documents: it has no upload control because there is nowhere for one to go. <a href={whyLocal}>Why local&nbsp;&rarr;</a></p>
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>

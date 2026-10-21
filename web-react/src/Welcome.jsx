@@ -11,7 +11,7 @@ const HOW = [
 ];
 
 const NOT = [
-  ['Fabricated data.', 'Every client, firm, adviser and licence number here is made up. No real documents were used.'],
+  ['No client data.', 'The main sample folder is made up, down to the licence numbers. The second set is PDFs their issuers publish: ASIC examples, blank templates and fund PDSs. Results only; the PDFs are not hosted.'],
   ['Nothing is uploaded or saved.', 'There is no upload control, and your clicks stay in this browser tab.'],
   ['Not financial advice.', 'The tool describes documents that already exist. It never writes or recommends advice.'],
   ['Not legal advice.', 'Its rules are mapped to the Corporations Act and ASIC guidance, and still need professional sign-off.'],

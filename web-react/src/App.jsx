@@ -4,7 +4,7 @@ import Inspector from './Inspector.jsx';
 import Tour, { STEPS as TOUR } from './Tour.jsx';
 import Welcome from './Welcome.jsx';
 import { Overview, Events, Review, Tree, About } from './views.jsx';
-import { DATA, PROFILES, statusOf, initials } from './model.js';
+import { DATASETS, SETS, PROFILES, statusOf, initials } from './model.js';
 
 const REPO = 'https://github.com/ahaythorpe/advice-document-classifier';
 const WHY_LOCAL = `${REPO}/blob/main/docs/DEPLOYMENT.md`;
@@ -39,6 +39,7 @@ function useWide() {
 }
 
 export default function App() {
+  const [set, setSet] = useState(SETS[0]);
   const [profile, setProfile] = useState(PROFILES[0]);
   const [view, setView] = useState(viewFromHash);
   const [selected, setSelected] = useState(null);
@@ -49,7 +50,7 @@ export default function App() {
   const wide = useWide();
   const scrollRef = useRef(null);
 
-  const d = DATA[profile];   // changing the scheme changes the folders and nothing else
+  const d = DATASETS[set][profile];   // changing the scheme changes the folders and nothing else
   const doc = selected && d.documents.find((x) => x.doc_id === selected);
 
   useEffect(() => {
@@ -82,8 +83,9 @@ export default function App() {
   const tourTo = (i) => {
     const s = TOUR[i];
     setTour(i);
+    setSet(SETS[0]);                    // the tour is written about the fabricated folder
     go(s.view);
-    const pick = s.select && s.select(d);
+    const pick = s.select && s.select(DATASETS[SETS[0]][profile]);
     setSelected(pick ? pick.doc_id : null);
   };
   const endTour = () => { setTour(null); setSelected(null); };
@@ -122,13 +124,22 @@ export default function App() {
         <span className="demo-tag">Demo only</span>
         <div className="msg">
           <b>Hosted on Vercel as a demonstration until it is properly built and adapted to a firm.</b>
-          <span>Fabricated documents only, with no upload control. Real firms run this as a desktop app, so client files never leave the firm.</span>
+          <span>Fabricated and publicly published documents only, with no upload control. Real firms run this as a desktop app, so client files never leave the firm.</span>
         </div>
         <a href={WHY_LOCAL}>Why local&nbsp;&rarr;</a>
       </div>
 
       <div className="body">
         <nav className="side" aria-label="Sections">
+          {SETS.length > 1 && <>
+            <h6>Sample set</h6>
+            {SETS.map((k) => (
+              <button key={k} className="nav" aria-current={set === k ? 'true' : undefined}
+                onClick={() => { setSet(k); setSelected(null); }}>
+                <Icon id={k === 'public' ? 'file' : 'cabinet'} />{DATASETS[k][profile].dataset_label}
+              </button>
+            ))}
+          </>}
           <h6>Batch</h6>
           {[['overview', 'grid'], ['events', 'layers', d.events.length], ['review', 'alert', d.batch.needs_review, 'warn'], ['tree', 'folder', n]].map(([v, ic, count, c]) => (
             <a key={v} className="nav" href={`#${v}`} aria-current={view === v ? 'page' : undefined}>
@@ -165,7 +176,7 @@ export default function App() {
                 <label htmlFor="profile">Filing scheme</label>
                 <div className="select">
                   <select id="profile" value={profile} onChange={(e) => setProfile(e.target.value)}>
-                    {PROFILES.map((p) => <option key={p} value={p}>{DATA[p].profile_name}</option>)}
+                    {PROFILES.map((p) => <option key={p} value={p}>{DATASETS[set][p].profile_name}</option>)}
                   </select>
                   <Icon id="down" />
                 </div>

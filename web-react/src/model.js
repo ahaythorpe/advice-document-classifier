@@ -1,7 +1,9 @@
 // Pure helpers over the pipeline payload. No UI here.
 
-export const DATA = window.DATA;
-export const PROFILES = Object.keys(DATA);
+// { dataset: { profile: manifest } }. The fabricated set is always present and first.
+export const DATASETS = window.DATA;
+export const SETS = Object.keys(DATASETS);
+export const PROFILES = Object.keys(DATASETS[SETS[0]]);
 
 // green = confident, amber = needs review or a finding, red = high-severity finding
 export function statusOf(x) {
