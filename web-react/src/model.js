@@ -1,6 +1,6 @@
 // Pure helpers over the pipeline payload. No UI here.
 
-// { dataset: { profile: manifest } }. The fabricated set is always present and first.
+// { dataset: { profile: manifest } }. The demo set is always present and first.
 export const DATASETS = window.DATA;
 export const SETS = Object.keys(DATASETS);
 export const PROFILES = Object.keys(DATASETS[SETS[0]]);
