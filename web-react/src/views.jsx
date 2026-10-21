@@ -1,26 +1,28 @@
 import { useState } from 'react';
 import { Icon, Dot, FileIcon, Confidence, StatusBadge, Type } from './atoms.jsx';
 import {
-  FILTERS, batchable, BATCH_LEVELS, groupByEvent, groupByStatus, folderTree, countFiles, highFindings, statusOf, initials, plural, flagTitle, cls, pct,
+  FILTERS, batchable, BATCH_LEVELS, groupByEvent, groupByStatus, folderTree, countFiles, statusOf, initials, plural, flagTitle, cls, pct,
 } from './model.js';
 
 /* ---------------------------------------------------------------- Overview */
 export function Overview({ d, go, startTour }) {
-  const high = highFindings(d);
+  const count = (s) => d.documents.filter((x) => statusOf(x) === s).length;
+  const held = count('warn');
+  const check = count('bad');
   const clients = new Set(d.events.map((e) => e.client)).size;
   const stats = [
-    { n: d.batch.documents, l: 'Documents', s: `${d.batch.auto_filed} proposed for filing`, to: 'events' },
-    { n: d.events.length, l: 'Advice events', s: plural(clients, 'client', 'clients'), to: 'events' },
-    { n: d.batch.needs_review, l: 'Need review', s: 'refused, with a reason', to: 'review', c: d.batch.needs_review ? 'warn' : '', dot: 'warn' },
-    { n: high, l: 'Worth checking', s: 'for a person to look at', to: 'events', c: high ? 'bad' : '', dot: 'bad' },
+    { n: d.batch.documents, l: 'Documents', s: `${count('ok')} ready to file in one click`, to: 'events', dot: 'ok' },
+    { n: d.events.length, l: 'Advice events', s: `for ${plural(clients, 'client', 'clients')}`, to: 'tree' },
+    { n: held, l: 'Needs review', s: 'held by the tool, with a reason', to: 'review', c: held ? 'warn' : '', dot: 'warn' },
+    { n: check, l: 'Worth checking', s: 'a person looks before filing', to: 'events', c: check ? 'bad' : '', dot: 'bad' },
   ];
   return (
     <div className="pad">
       <p className="eyebrow">{d.dataset_label} · {d.batch.documents} files</p>
       <h1>{d.dataset === 'public' ? 'Real published PDFs and a tool that won’t guess' : 'A messy client folder in, a proposed filing out'}</h1>
-      <p className="lede">For each document the tool decides what it is, which client and which{' '}
-        <em>advice event</em> it belongs to. Then it proposes where to file it
-        or refuses and says why. It never files silently.</p>
+      <p className="lede">The tool reads each document and works out what it is, which client it is for and which{' '}
+        <em>advice event</em> it belongs to: one piece of advice and every document behind it. The confident ones are filed in one click. The rest wait for a
+        person. Every filing is logged and can be undone.</p>
       {d.dataset_note && <div className="box sub set-note"><Icon id="info" /><span>{d.dataset_note}</span></div>}
       <button className="btn primary tour-cta" onClick={startTour}><Icon id="play" />Take the 1-minute tour</button>
       <div className="stats">
@@ -79,12 +81,12 @@ function BatchBar({ d, decisions, onBatch }) {
   return (
     <div className="batch">
       <div className="batch-tx">
-        <b>Approve the confident ones together</b>
-        <span>Placed, nothing held and nothing to check, at or above
+        <b>File the confident ones in one click</b>
+        <span>Everything with nothing to check at or above
           <span className="select inline"><select aria-label="Confidence level" value={level} onChange={(e) => setLevel(+e.target.value)}>
             {BATCH_LEVELS.map((l) => <option key={l} value={l}>{pct(l)}%</option>)}
           </select><Icon id="down" /></span>.
-          {oneByOne > 0 && <> {plural(oneByOne, 'other needs', 'others need')} a person one by one.</>}</span>
+          {oneByOne > 0 && <> {plural(oneByOne, 'other waits', 'others wait')} for a person.</>}</span>
       </div>
       <button className="btn primary" disabled={!ready.length} onClick={() => onBatch(ready.map((x) => x.doc_id), level)}>
         <Icon id="check" />{ready.length ? `Approve and file ${ready.length}` : 'Nothing left to batch'}</button>
@@ -103,8 +105,7 @@ function GroupRow({ avatar, title, meta, tag, count }) {
 
 const STATUS_META = {
   'Needs review': 'held, the tool will not file these',
-  'Worth checking': 'a compliance point for a person to look at',
-  Note: 'a minor point, can still be filed',
+  'Worth checking': 'not held, but a person should look before filing',
   Confident: 'nothing to check',
 };
 
@@ -134,15 +135,15 @@ export function Events({ d, selected, onSelect, decisions, onBatch }) {
         </div>
       </div>
       <div className="scale" role="note">
-        <span className="scale-l">Confidence scale</span>
+        <span className="scale-l">Confidence</span>
         <span className="scale-k">0%</span>
         <span className="scale-bar" aria-hidden="true">
           <i style={{ width: `${pct(t)}%` }} className="below" /><i className="above" />
           <b className="tick" style={{ left: `${pct(t)}%` }} />
         </span>
         <span className="scale-k">100%</span>
-        <span className="scale-t">The line is {pct(t)}%. Below it the tool will not file the document and holds it for a person.</span>
-        <span className="scale-note">Confidence is how sure it is of the document type. Worth checking is separate: a compliance point for a person to look at, even at 100%.</span>
+        <span className="scale-t">How sure the tool is of each document’s type. Below {pct(t)}% it holds the document for a person.
+          Worth checking is separate: something to look at even at 100%.</span>
       </div>
       <table className="table">
         <thead><tr><th>Name</th><th className="col-type">Type</th><th className="col-client">Client</th><th className="col-conf">Confidence</th><th className="col-status">Status</th><th className="col-why"><span className="sr">Explain</span></th></tr></thead>
@@ -176,11 +177,11 @@ export function Events({ d, selected, onSelect, decisions, onBatch }) {
 }
 
 /* ---------------------------------------------------------------- Needs review */
-export function Review({ d, selected, onSelect }) {
+export function Review({ d, selected, onSelect, decisions }) {
   const held = d.documents.filter((x) => x.needs_review);
   return (
     <>
-      <p className="intro-line">Documents the tool refused to place. Each one waits for a person; nothing here is filed.</p>
+      <p className="intro-line">Documents the tool would not place. Each one waits for a person to approve or reject it.</p>
       <div className="rv-list">
         {!held.length && <div className="empty">Nothing needs review in this batch.</div>}
         {held.map((x) => {
@@ -194,7 +195,7 @@ export function Review({ d, selected, onSelect }) {
                 <b>{x.source_name}</b><span className="m">{x.type_label} · {x.client || 'no client'} · {x.date || 'undated'}</span>
                 {f && <p><strong>{flagTitle(f.id)}.</strong> {f.message}</p>}
               </div>
-              <button className="btn sm">Review</button>
+              {decisions[x.doc_id] ? <Decided k={decisions[x.doc_id]} /> : <button className="btn sm">Review</button>}
             </div>
           );
         })}
@@ -294,8 +295,8 @@ const STEPS = [
   ['Read', 'Text is pulled from every file in the folder, scanned or digital. Its extraction quality is scored.'],
   ['Identify', 'Each document is typed (SOA, ROA, FSG, Fact Find, Risk Profile…), dated and matched to a client and advice event.'],
   ['Check', 'Rules from the knowledge base look for gaps and mismatches a person should check, such as a risk profile that does not match the SOA.'],
-  ['Propose', 'A destination is proposed under the firm’s own filing scheme. If the tool is unsure it refuses and says why.'],
-  ['Ask a person', 'A human approves every suggestion. It never files silently.'],
+  ['Propose', 'A folder is proposed: the client, then the advice event. If the tool is unsure it holds the document and says why.'],
+  ['File', 'The confident ones are filed in one click. The rest wait for a person. Every filing is logged and can be undone.'],
 ];
 
 export function About({ whyLocal }) {
@@ -316,7 +317,7 @@ export function About({ whyLocal }) {
       </div>
 
       <p className="eyebrow">How it works</p>
-      <h1>Five steps. The last one is always a person.</h1>
+      <h1>Five steps. A person always has the final say.</h1>
       <ol className="steps">
         {STEPS.map(([k, p], i) => <li key={k}><div className="k"><i>{i + 1}</i>{k}</div><p>{p}</p></li>)}
       </ol>

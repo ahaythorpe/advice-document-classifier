@@ -5,18 +5,16 @@ export const DATASETS = window.DATA;
 export const SETS = Object.keys(DATASETS);
 export const PROFILES = Object.keys(DATASETS[SETS[0]]);
 
-// green = confident, amber = needs review or a finding, red = high-severity finding
+// Every document is in exactly one group, so the counts agree on every screen.
+// Held by the tool (amber), not held but something to check (red), or confident (green).
 export function statusOf(x) {
-  if (x.flags.some((f) => f.severity === 'high')) return 'bad';
-  if (x.needs_review || x.flags.length) return 'warn';
+  if (x.needs_review) return 'warn';
+  if (x.flags.length) return 'bad';
   return 'ok';
 }
 
 export function statusLabel(x) {
-  if (x.needs_review) return 'Needs review';
-  if (x.flags.some((f) => f.severity === 'high')) return 'Worth checking';
-  if (x.flags.length) return 'Note';
-  return 'Confident';
+  return { warn: 'Needs review', bad: 'Worth checking', ok: 'Confident' }[statusOf(x)];
 }
 
 export const cls = (s) => (s === 'ok' ? '' : s);
@@ -34,13 +32,13 @@ export const flagTitle = (id) =>
 
 export const FILTERS = [
   { key: 'all', label: 'All', test: () => true },
+  { key: 'review', label: 'Needs review', test: (x) => statusOf(x) === 'warn' },
+  { key: 'findings', label: 'Worth checking', test: (x) => statusOf(x) === 'bad' },
   { key: 'ok', label: 'Confident', test: (x) => statusOf(x) === 'ok' },
-  { key: 'review', label: 'Needs review', test: (x) => x.needs_review },
-  { key: 'findings', label: 'Worth checking', test: (x) => x.flags.length > 0 },
 ];
 
 // Most urgent first: what is held, then what to look at, then what is fine.
-export const STATUS_ORDER = ['Needs review', 'Worth checking', 'Note', 'Confident'];
+export const STATUS_ORDER = ['Needs review', 'Worth checking', 'Confident'];
 
 export function groupByStatus(d, keep) {
   const by = {};
