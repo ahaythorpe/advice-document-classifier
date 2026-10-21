@@ -12,7 +12,7 @@ export function Overview({ d, go, startTour }) {
     { n: d.batch.documents, l: 'Documents', s: `${d.batch.auto_filed} proposed for filing`, to: 'events' },
     { n: d.events.length, l: 'Advice events', s: plural(clients, 'client', 'clients'), to: 'events' },
     { n: d.batch.needs_review, l: 'Need review', s: 'refused, with a reason', to: 'review', c: d.batch.needs_review ? 'warn' : '', dot: 'warn' },
-    { n: high, l: 'High findings', s: 'compliance flags', to: 'events', c: high ? 'bad' : '', dot: 'bad' },
+    { n: high, l: 'Worth checking', s: 'for a person to look at', to: 'events', c: high ? 'bad' : '', dot: 'bad' },
   ];
   return (
     <div className="pad">
@@ -39,7 +39,7 @@ export function Overview({ d, go, startTour }) {
       <div className="legend">
         <span><Dot s="ok" />Confident</span>
         <span><Dot s="warn" />Needs review</span>
-        <span><Dot s="bad" />High-severity finding</span>
+        <span><Dot s="bad" />Worth checking</span>
       </div>
     </div>
   );
@@ -188,7 +188,7 @@ export function Tree({ d, selected, onSelect }) {
 const STEPS = [
   ['Read', 'Text is pulled from every file in the folder, scanned or digital. Its extraction quality is scored.'],
   ['Identify', 'Each document is typed (SOA, ROA, FSG, Fact Find, Risk Profile…), dated and matched to a client and advice event.'],
-  ['Check', 'Compliance rules from the knowledge base run across the event, flagging gaps and mismatches by severity.'],
+  ['Check', 'Rules from the knowledge base look for gaps and mismatches a person should check, such as a risk profile that does not match the SOA.'],
   ['Propose', 'A destination is proposed under the firm’s own filing scheme. If the tool is unsure it refuses and says why.'],
   ['Ask a person', 'A human approves every suggestion. It never files silently.'],
 ];
@@ -222,7 +222,7 @@ export function About({ whyLocal }) {
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>
-        <p>Changing the filing scheme changes the folders and nothing else. The classification, the advice events and the findings are identical. That is what lets the tool fit a firm’s existing system instead of replacing it.</p>
+        <p>Changing the filing scheme changes the folders and nothing else. The classification, the advice events and the points to check are identical. That is what lets the tool fit a firm’s existing system instead of replacing it.</p>
       </div>
     </div>
   );

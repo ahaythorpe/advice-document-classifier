@@ -1,4 +1,4 @@
-import { statusOf, statusLabel, cls, pct, dotColor, flagTitle } from './model.js';
+import { statusOf, statusLabel, cls, pct, dotColor, flagTitle, SEVERITY } from './model.js';
 
 export const Icon = ({ id }) => (
   <svg className="i"><use href={`#i-${id}`} /></svg>
@@ -30,7 +30,7 @@ export const Type = ({ children }) => <span className="type">{children}</span>;
 
 export const Finding = ({ f }) => (
   <div className={`note ${f.severity === 'high' ? 'high' : ''}`}>
-    <div className="nh"><span className="sev">{f.severity}</span><span>{flagTitle(f.id)}</span></div>
-    {f.message}<em> ({f.blocks_filing ? 'blocks filing' : 'files anyway'})</em>
+    <div className="nh"><span className="sev">{SEVERITY[f.severity] || f.severity}</span><span>{flagTitle(f.id)}</span></div>
+    {f.message}<em> ({f.blocks_filing ? 'held until checked' : 'can still be filed'})</em>
   </div>
 );

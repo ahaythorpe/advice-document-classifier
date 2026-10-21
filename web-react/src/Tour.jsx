@@ -25,7 +25,7 @@ export const STEPS = [
   {
     view: 'events', target: '.insp-body', select: soa,
     title: 'Why it was placed there',
-    body: 'The type, how confident the tool is, the words it found as evidence, any compliance findings and the folder it proposes.',
+    body: 'The type, how confident the tool is, the words it found as evidence, anything worth checking and the folder it proposes.',
   },
   {
     view: 'events', target: '.insp-foot', select: soa,

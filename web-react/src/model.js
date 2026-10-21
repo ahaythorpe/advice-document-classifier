@@ -14,8 +14,8 @@ export function statusOf(x) {
 
 export function statusLabel(x) {
   if (x.needs_review) return 'Needs review';
-  if (x.flags.some((f) => f.severity === 'high')) return 'High finding';
-  if (x.flags.length) return 'Finding';
+  if (x.flags.some((f) => f.severity === 'high')) return 'Worth checking';
+  if (x.flags.length) return 'Note';
   return 'Confident';
 }
 
@@ -26,6 +26,9 @@ export const initials = (n) => (n || '?').split(/\s+/).map((w) => w[0]).join('')
 export const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
 const ACRONYM = /^(atp|soa|roa|fsg|pds|afca)$/;
+// Plain words for severity: these are prompts for a person, not verdicts.
+export const SEVERITY = { high: 'Important', medium: 'Check', low: 'Note' };
+
 export const flagTitle = (id) =>
   id.split('_').map((w, i) => (ACRONYM.test(w) ? w.toUpperCase() : i ? w : w[0].toUpperCase() + w.slice(1))).join(' ');
 
@@ -33,7 +36,7 @@ export const FILTERS = [
   { key: 'all', label: 'All', test: () => true },
   { key: 'ok', label: 'Confident', test: (x) => statusOf(x) === 'ok' },
   { key: 'review', label: 'Needs review', test: (x) => x.needs_review },
-  { key: 'findings', label: 'Findings', test: (x) => x.flags.length > 0 },
+  { key: 'findings', label: 'Worth checking', test: (x) => x.flags.length > 0 },
 ];
 
 export function groupByEvent(d, keep) {

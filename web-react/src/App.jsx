@@ -194,7 +194,7 @@ export default function App() {
                 <span className="kb"><Icon id="shield" /><span>Knowledge base v{d.knowledge_base_version}</span></span> · Australia, Corporations Act 2001, ASIC.
                 Not legal advice.<br />
                 Changing the filing scheme changes the folders and nothing else. The
-                classification, the advice events and the findings are identical. That is what
+                classification, the advice events and the points to check are identical. That is what
                 lets the tool fit a firm’s existing system instead of replacing it.
               </footer>
             </div>

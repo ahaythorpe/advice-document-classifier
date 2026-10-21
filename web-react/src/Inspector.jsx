@@ -49,10 +49,10 @@ export default function Inspector({ d, doc, decision, onDecide, onStep, onClose 
           </dl>
         </div>
 
-        <div className="isec"><h4>Findings</h4>
+        <div className="isec"><h4>Worth checking</h4>
           {doc.flags.length
             ? doc.flags.map((f) => <Finding key={f.id} f={f} />)
-            : <div className="none"><Icon id="check" />No findings</div>}
+            : <div className="none"><Icon id="check" />Nothing to check</div>}
         </div>
 
         <div className="isec"><h4>{doc.needs_review ? 'Held in' : 'Proposed filing'}</h4>
