@@ -319,6 +319,7 @@ h1{font-size:26px;line-height:1.2;letter-spacing:-.024em;margin:0 0 10px;font-we
 .log-doc .pc{font-variant-numeric:tabular-nums;color:var(--faint);font-size:12px}
 .log-doc .to{font-family:var(--mono,ui-monospace,monospace);font-size:11.5px;overflow-wrap:anywhere}
 .log-doc .why{font-size:12px;color:var(--faint)}
+.stg{display:block;font-size:11px;color:var(--faint);margin-top:1px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .isec{padding:12px 0;border-bottom:1px solid var(--hair)}
 .isec:last-child{border-bottom:0}

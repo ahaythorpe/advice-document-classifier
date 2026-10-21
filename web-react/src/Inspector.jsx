@@ -57,6 +57,7 @@ export default function Inspector({ d, doc, decision, onDecide, onStep, onClose 
         <div className="isec"><h4>Classification</h4>
           <dl className="kv">
             <dt>Type</dt><dd>{doc.type_label}{doc.category && <small>{doc.category}</small>}</dd>
+            {doc.stages && doc.stages.length > 0 && <><dt>Stage</dt><dd>{doc.stages.join(' · ')}</dd></>}
             <dt>Confidence</dt><dd><Confidence doc={doc} threshold={d.confidence_threshold} /></dd>
             <dt>Extraction</dt><dd>{pct(doc.extraction_quality)}% quality · {plural(doc.pages, 'page', 'pages')}</dd>
           </dl>

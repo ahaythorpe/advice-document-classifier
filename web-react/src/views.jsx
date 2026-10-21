@@ -267,7 +267,8 @@ function Branch({ node, selected, onSelect, decisions }) {
         <li key={x.doc_id}>
           <button className="tr" aria-selected={selected === x.doc_id} onClick={() => onSelect(x.doc_id)} title={x.source_name} data-doc={x.doc_id}>
             <span className="fl"><Icon id="file" /></span>
-            <span className="nm">{(x.destination || {}).filename || x.source_name}</span>
+            <span className="nm">{(x.destination || {}).filename || x.source_name}
+              {x.stages && x.stages.length > 0 && <small className="stg">Stage {x.stages.join(' · ')}</small>}</span>
             <span className="ty">{decisions[x.doc_id] === 'approve' && <span className="filed-tag"><Icon id="check" />Filed</span>}
               <Type>{x.type_label}</Type><i className={`dot ${cls(statusOf(x))}`} /></span>
           </button>
