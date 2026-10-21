@@ -8,7 +8,7 @@
   "extra_illegal_chars": "#%&{}~+",
   "folders": {
     "client": "{client}",
-    "event": "{event_date:%Y-%m} {subject} ({record_label}{sub_kind_suffix})",
+    "event": "{event_date:%Y-%m} {subject}",
     "category": "{category}",
     "client_level": "Client Level",
     "licensee": "Licensee",
