@@ -110,7 +110,7 @@ export default function App() {
         <span className="appmark" aria-hidden="true"><Icon id="cabinet" /></span>
         <span className="appname">Advice Document Filing</span>
         <span className="tb-demo">Demo</span>
-        <span className="pill" title="Runs on this computer. No network, no upload."><Icon id="lock" /><span className="lbl">Local · Offline</span></span>
+        <span className="pill" title="An early demo to show the idea."><Icon id="info" /><span className="lbl">Prototype</span></span>
         <span className="grow" />
         <a className="tb-link" href={REPO}><Icon id="code" />Source</a>
         <div className="seg" role="group" aria-label="Theme">
@@ -123,10 +123,10 @@ export default function App() {
       <div className="banner" role="note">
         <span className="demo-tag">Demo only</span>
         <div className="msg">
-          <b>Hosted on Vercel as a demonstration until it is properly built and adapted to a firm.</b>
-          <span>Fabricated and publicly published documents only. There is no upload control. Real firms run this as a desktop app so client files never leave the firm.</span>
+          <b>Prototype demo, shared to show how the idea works.</b>
+          <span>Fabricated and publicly published documents only. There is no upload control, so no real client file can be added.</span>
         </div>
-        <a href={WHY_LOCAL}>Why local&nbsp;&rarr;</a>
+        <a href={WHY_LOCAL}>Read more&nbsp;&rarr;</a>
       </div>
 
       <div className="body">

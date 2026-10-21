@@ -15,7 +15,7 @@ const NOT = [
   ['Nothing is uploaded or saved.', 'There is no upload control. Your clicks stay in this browser tab.'],
   ['Not financial advice.', 'The tool describes documents that already exist. It never writes or recommends advice.'],
   ['Not legal advice.', 'Its rules are mapped to the Corporations Act and ASIC guidance. They still need professional sign-off.'],
-  ['Real firms run it locally.', 'It runs as a desktop app on the firm’s own computers. Client files never leave the firm.'],
+  ['A prototype.', 'This is an early demo to show the idea. It is not a finished product.'],
 ];
 
 export default function Welcome({ onTour, onClose }) {

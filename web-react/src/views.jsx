@@ -207,8 +207,7 @@ export function About({ whyLocal }) {
           the wrong place the firm loses time and carries a compliance risk. It has to
           be able to produce the right document when asked.</p>
         <p>So this is deliberately small. It does one job and sits on top of the system a firm
-          already uses instead of replacing it. It runs on the firm’s own computer and leaves every
-          decision with a person.</p>
+          already uses instead of replacing it. Every decision stays with a person.</p>
       </div>
 
       <p className="eyebrow">How it works</p>
@@ -217,9 +216,9 @@ export function About({ whyLocal }) {
         {STEPS.map(([k, p], i) => <li key={k}><div className="k"><i>{i + 1}</i>{k}</div><p>{p}</p></li>)}
       </ol>
       <div className="box">
-        <h3><Icon id="lock" />Why it runs locally</h3>
+        <h3><Icon id="lock" />Built with privacy in mind</h3>
         <p>Client files are confidential. A hosted version of the tool would mean uploading them to somebody else’s computer. That is a data-residency decision for the licensee, not a deployment choice.</p>
-        <p>So firms piloting the tool run it as a desktop app on their own computers. Confidential documents never leave the firm. This page is a demonstration on fabricated and publicly published documents: it has no upload control because there is nowhere for one to go. <a href={whyLocal}>Why local&nbsp;&rarr;</a></p>
+        <p>That is why the design keeps documents on the firm’s own computer. This page is a prototype demo on fabricated and publicly published documents. It has no upload control because there is nowhere for one to go. <a href={whyLocal}>Read more&nbsp;&rarr;</a></p>
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>

@@ -50,7 +50,7 @@ export const STEPS = [
   {
     view: 'about', target: '.about .why',
     title: 'Why I built this',
-    body: 'Big advice software is clunky and expensive. None of it reads a document for you. This tool is small. It sits on top of what a firm already uses and runs on its own computer.',
+    body: 'Big advice software is clunky and expensive. None of it reads a document for you. This tool is small and sits on top of what a firm already uses.',
   },
 ];
 
