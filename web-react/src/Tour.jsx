@@ -48,8 +48,8 @@ export const STEPS = [
   },
   {
     view: 'tree', target: '.view:not([hidden]) .tree .tn .tn > li > .tr',   // the first advice event folder
-    title: 'Client then advice event',
-    body: 'Each client has a folder with one folder per advice event inside. The stage shows on each document. A firm can switch to its own scheme above.',
+    title: 'Client, advice event, then step',
+    body: 'Each client has a folder with one per advice event inside. In each event the documents sit by step: goals and situation, advice, implementation. A firm can switch to its own scheme above.',
   },
   {
     view: 'about', target: '.about .why',

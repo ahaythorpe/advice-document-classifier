@@ -84,6 +84,18 @@ class KnowledgeBase(object):
             return False
         return bool(self.by_id.get(doc_id, {}).get("advice_record_role"))
 
+    def stage_folder(self, doc_id: Optional[str]) -> Optional[str]:
+        """The step folder a document type files under inside an event, or None.
+
+        filing_model.stage_folders.folders lists the practical steps only; a
+        type in none of them files at the event level.
+        """
+        folders = self.data.get("filing_model", {}).get("stage_folders", {}).get("folders", {})
+        for name, rule in folders.items():
+            if doc_id in rule.get("docs", []):
+                return name
+        return None
+
     def category(self, doc_id: Optional[str]) -> Optional[str]:
         if doc_id is None:
             return None
