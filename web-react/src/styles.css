@@ -53,7 +53,9 @@
 .tour-dots{display:flex;gap:5px;margin-bottom:12px}
 .tour-dots i{width:6px;height:6px;border-radius:50%;background:var(--sel)}
 .tour-dots i.on{background:var(--accent);width:16px;border-radius:3px}
-.tour-acts{display:flex;gap:8px;justify-content:flex-end}
+.tour-acts{display:flex;gap:8px;align-items:center}
+.link-btn{background:none;border:0;padding:4px 2px;font-size:12px;color:var(--mute);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.link-btn:hover{color:var(--fg)}
 .btn:disabled{opacity:.45;cursor:default}
 .tour-cta{flex:none;display:inline-flex;align-items:center;gap:7px;margin:18px 0 4px}
 button.nav{width:100%;background:none;border:0;text-align:left;cursor:pointer}

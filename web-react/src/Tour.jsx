@@ -135,8 +135,10 @@ export default function Tour({ d, step, onStep, onClose }) {
           {STEPS.map((_, i) => <i key={i} className={i === step ? 'on' : ''} />)}
         </div>
         <div className="tour-acts">
+          {!last && <button className="link-btn" onClick={onClose}>Skip tour</button>}
+          <span className="grow" />
           <button className="btn sm" disabled={step === 0} onClick={() => onStep(step - 1)}>Back</button>
-          <button className="btn sm primary" onClick={next}>{last ? 'Finish' : s.click ? 'Skip' : 'Next'}</button>
+          <button className="btn sm primary" onClick={next}>{last ? 'Finish' : 'Next'}</button>
         </div>
       </div>
     </>
