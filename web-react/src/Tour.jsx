@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { Icon } from './atoms.jsx';
 
 const soa = (d) => d.documents.find((x) => x.type_label === 'SOA');
 
@@ -15,7 +14,7 @@ export const STEPS = [
   {
     view: 'overview', target: 'a.nav[href="#events"]', click: true,
     title: 'Open the advice events',
-    body: 'Click Advice events in the sidebar.',
+    body: 'Click Advice events.',
   },
   {
     view: 'events', target: (d) => `.view:not([hidden]) tr[data-doc="${soa(d).doc_id}"]`, click: true,
@@ -118,6 +117,9 @@ export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
   });
 
   const pos = place(rect);
+  // Phones pin the card to the bottom edge; when the spotlit element is in the
+  // lower half it moves to the top so it never covers what it describes.
+  const low = rect && rect.top + rect.height / 2 > window.innerHeight / 2;
   return (
     <>
       {rect && (
@@ -125,11 +127,9 @@ export default function Tour({ d, step, onStep, onClose, onBackToStart }) {
           top: rect.top - PAD, left: rect.left - PAD, width: rect.width + PAD * 2, height: rect.height + PAD * 2,
         }} />
       )}
-      <div className="tour" role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
+      <div className={`tour ${low ? 'low' : ''}`} role="dialog" aria-label="Guided tour" aria-live="polite" style={pos}>
         <div className="tour-head">
           <span className="tour-n">{step + 1} of {STEPS.length}</span>
-          <span className="grow" />
-          <button className="ibtn" title="Close tour" onClick={onClose}><Icon id="x" /></button>
         </div>
         <b>{s.title}</b>
         <p>{s.body}</p>

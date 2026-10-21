@@ -24,7 +24,6 @@ export default function Welcome({ onTour, onClose }) {
   return (
     <div className="scrim" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-        <button className="ibtn welcome-x" title="Close" onClick={onClose}><Icon id="x" /></button>
         <span className="demo-tag">Demo only</span>
         <h2 id="welcome-title">Advice Document Filing</h2>
         <p className="welcome-lede">A tool that reads a financial-advice firm’s client documents,
