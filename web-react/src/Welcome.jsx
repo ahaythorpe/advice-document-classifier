@@ -11,11 +11,11 @@ const HOW = [
 ];
 
 const NOT = [
-  ['No client data.', 'The main sample folder is made up, down to the licence numbers. The second set is PDFs their issuers publish: ASIC examples, blank templates and fund PDSs. Results only; the PDFs are not hosted.'],
-  ['Nothing is uploaded or saved.', 'There is no upload control, and your clicks stay in this browser tab.'],
+  ['No client data.', 'The main sample folder is made up down to the licence numbers. The second set is PDFs their issuers publish: ASIC examples, blank templates and fund PDSs. Only the results are shown here. The PDFs are not hosted.'],
+  ['Nothing is uploaded or saved.', 'There is no upload control. Your clicks stay in this browser tab.'],
   ['Not financial advice.', 'The tool describes documents that already exist. It never writes or recommends advice.'],
-  ['Not legal advice.', 'Its rules are mapped to the Corporations Act and ASIC guidance, and still need professional sign-off.'],
-  ['Real firms run it locally.', 'As a desktop app on their own computers, so client files never leave the firm.'],
+  ['Not legal advice.', 'Its rules are mapped to the Corporations Act and ASIC guidance. They still need professional sign-off.'],
+  ['Real firms run it locally.', 'It runs as a desktop app on the firm’s own computers. Client files never leave the firm.'],
 ];
 
 export default function Welcome({ onTour, onClose }) {
@@ -28,7 +28,7 @@ export default function Welcome({ onTour, onClose }) {
         <span className="demo-tag">Demo only</span>
         <h2 id="welcome-title">Advice Document Filing</h2>
         <p className="welcome-lede">A tool that reads a financial-advice firm’s client documents,
-          works out what each one is, and proposes where to file it. A person approves every suggestion.</p>
+          works out what each one is and proposes where to file it. A person approves every suggestion.</p>
 
         <h4>How it works</h4>
         <ol className="welcome-how">

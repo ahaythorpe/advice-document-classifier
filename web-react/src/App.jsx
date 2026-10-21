@@ -124,7 +124,7 @@ export default function App() {
         <span className="demo-tag">Demo only</span>
         <div className="msg">
           <b>Hosted on Vercel as a demonstration until it is properly built and adapted to a firm.</b>
-          <span>Fabricated and publicly published documents only, with no upload control. Real firms run this as a desktop app, so client files never leave the firm.</span>
+          <span>Fabricated and publicly published documents only. There is no upload control. Real firms run this as a desktop app so client files never leave the firm.</span>
         </div>
         <a href={WHY_LOCAL}>Why local&nbsp;&rarr;</a>
       </div>

@@ -39,12 +39,12 @@ TEMPLATE = os.path.join(HERE, "web-react", "dist", "index.html")
 # git), so the page shows that set's results, never the documents themselves.
 FABRICATED = ("fabricated", "Fabricated client folder",
               "Ten made-up documents for one invented household, written to show "
-              "the whole flow: grouping, findings, and what gets held for review.")
+              "the whole flow: grouping, findings and what gets held for review.")
 PUBLIC = ("public", "Public sample PDFs",
           "Real PDFs that issuers publish: ASIC's annotated example SOAs and ROAs, "
           "blank fact-find and risk-profile templates, super fund PDSs, plus "
           "synthetic mocks for documents no one publishes. Blank templates name "
-          "no client and carry no date, so the tool holds them all for review "
+          "no client and carry no date. The tool holds them all for review "
           "rather than guess where they belong. No client documents.")
 
 

@@ -25,7 +25,7 @@ export const STEPS = [
   {
     view: 'events', target: '.insp-body', select: soa,
     title: 'Why it was placed there',
-    body: 'The type, how confident the tool is, the words it found as evidence, any compliance findings, and the folder it proposes.',
+    body: 'The type, how confident the tool is, the words it found as evidence, any compliance findings and the folder it proposes.',
   },
   {
     view: 'events', target: '.insp-foot', select: soa,
@@ -40,7 +40,7 @@ export const STEPS = [
   {
     view: 'review', target: '.rv-list',
     title: 'It refuses rather than guesses',
-    body: 'When the tool is not sure, it holds the document for a person and says why. A wrongly filed client record is a compliance problem, so the bar is certainty.',
+    body: 'When the tool is not sure it holds the document for a person and says why. A wrongly filed client record is a compliance problem. The bar is certainty.',
   },
   {
     view: 'tree', target: '.scheme',
@@ -50,7 +50,7 @@ export const STEPS = [
   {
     view: 'about', target: '.about .why',
     title: 'Why I built this',
-    body: 'Big advice software is clunky and expensive, and none of it reads a document for you. This is small, sits on top of what a firm already uses, and runs on its own computer.',
+    body: 'Big advice software is clunky and expensive. None of it reads a document for you. This tool is small. It sits on top of what a firm already uses and runs on its own computer.',
   },
 ];
 

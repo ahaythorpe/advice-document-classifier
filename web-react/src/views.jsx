@@ -17,10 +17,10 @@ export function Overview({ d, go, startTour }) {
   return (
     <div className="pad">
       <p className="eyebrow">{d.dataset_label} · {d.batch.documents} files</p>
-      <h1>{d.dataset === 'public' ? 'Real published PDFs, and a tool that won’t guess' : 'A messy client folder in, a proposed filing out'}</h1>
+      <h1>{d.dataset === 'public' ? 'Real published PDFs and a tool that won’t guess' : 'A messy client folder in, a proposed filing out'}</h1>
       <p className="lede">For each document the tool decides what it is, which client and which{' '}
-        <em>advice event</em> it belongs to, and proposes where to file it, or
-        refuses and says why. It never files silently.</p>
+        <em>advice event</em> it belongs to. Then it proposes where to file it
+        or refuses and says why. It never files silently.</p>
       {d.dataset === 'public' && <div className="box sub set-note"><Icon id="info" /><span>{d.dataset_note}</span></div>}
       <button className="btn primary tour-cta" onClick={startTour}><Icon id="play" />Take the 1-minute tour</button>
       <div className="stats">
@@ -100,7 +100,7 @@ export function Events({ d, selected, onSelect }) {
             <GroupRow key="loose"
               avatar={<span className="av" style={{ background: 'var(--sel)', color: 'var(--mute)' }}><Icon id="folder" /></span>}
               title="Outside any advice event"
-              meta="licensee material, client-level documents, and anything not placed" count={loose.length} />,
+              meta="licensee material, client-level documents and anything not placed" count={loose.length} />,
             ...loose.map((x) => <DocRow key={x.doc_id} x={x} selected={selected} onSelect={onSelect} />),
           ]}
           {empty && <tr><td colSpan={5} className="empty">No documents match this filter.</td></tr>}
@@ -186,10 +186,10 @@ export function Tree({ d, selected, onSelect }) {
 
 /* ---------------------------------------------------------------- About */
 const STEPS = [
-  ['Read', 'Text is pulled from every file in the folder, scanned or digital, and its extraction quality is scored.'],
-  ['Identify', 'Each document is typed (SOA, ROA, FSG, Fact Find, Risk Profile…), dated, and matched to a client and advice event.'],
+  ['Read', 'Text is pulled from every file in the folder, scanned or digital. Its extraction quality is scored.'],
+  ['Identify', 'Each document is typed (SOA, ROA, FSG, Fact Find, Risk Profile…), dated and matched to a client and advice event.'],
   ['Check', 'Compliance rules from the knowledge base run across the event, flagging gaps and mismatches by severity.'],
-  ['Propose', 'A destination is proposed under the firm’s own filing scheme, or the tool refuses and says why.'],
+  ['Propose', 'A destination is proposed under the firm’s own filing scheme. If the tool is unsure it refuses and says why.'],
   ['Ask a person', 'A human approves every suggestion. It never files silently.'],
 ];
 
@@ -200,26 +200,26 @@ export function About({ whyLocal }) {
       <h1>Big advice software is clunky and expensive</h1>
       <div className="box why">
         <p>Working around Australian advice firms, I kept hearing the same thing: the big
-          platforms are clunky, expensive, and built for large licensees. Most practices are
-          small, around two or three advisers, and they still file client documents by hand.</p>
+          platforms are clunky and expensive and built for large licensees. Most practices are
+          small, with two or three advisers. They still file client documents by hand.</p>
         <p>Those platforms <em>store</em> documents. None of them <em>reads</em> one and says
           “this is an ROA for this client, from this piece of advice”. When a record is filed in
-          the wrong place, the firm loses time and carries a compliance risk, because it has to
+          the wrong place the firm loses time and carries a compliance risk. It has to
           be able to produce the right document when asked.</p>
-        <p>So this is deliberately small. It does one job, sits on top of the system a firm
-          already uses instead of replacing it, runs on the firm’s own computer, and leaves every
+        <p>So this is deliberately small. It does one job and sits on top of the system a firm
+          already uses instead of replacing it. It runs on the firm’s own computer and leaves every
           decision with a person.</p>
       </div>
 
       <p className="eyebrow">How it works</p>
-      <h1>Five steps, and the last one is always a person</h1>
+      <h1>Five steps. The last one is always a person.</h1>
       <ol className="steps">
         {STEPS.map(([k, p], i) => <li key={k}><div className="k"><i>{i + 1}</i>{k}</div><p>{p}</p></li>)}
       </ol>
       <div className="box">
         <h3><Icon id="lock" />Why it runs locally</h3>
-        <p>Client files are confidential. A hosted version of the tool would mean uploading them to somebody else’s computer, which is a data-residency decision for the licensee rather than a deployment choice.</p>
-        <p>So firms piloting the tool run it as a desktop app on their own computers, and confidential documents never leave the firm. This page is a demonstration on fabricated and publicly published documents: it has no upload control because there is nowhere for one to go. <a href={whyLocal}>Why local&nbsp;&rarr;</a></p>
+        <p>Client files are confidential. A hosted version of the tool would mean uploading them to somebody else’s computer. That is a data-residency decision for the licensee, not a deployment choice.</p>
+        <p>So firms piloting the tool run it as a desktop app on their own computers. Confidential documents never leave the firm. This page is a demonstration on fabricated and publicly published documents: it has no upload control because there is nowhere for one to go. <a href={whyLocal}>Why local&nbsp;&rarr;</a></p>
       </div>
       <div className="box">
         <h3><Icon id="folder" />Fits the firm’s existing system</h3>
